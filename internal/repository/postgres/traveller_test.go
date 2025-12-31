@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/cotc-db-api/pkg/domain"
 	"lizobly/cotc-db-api/pkg/helpers"
+	"lizobly/cotc-db-api/pkg/logging"
 	"regexp"
 	"testing"
 	"time"
@@ -32,7 +33,8 @@ func (s *TravellerRepositorySuite) SetupTest() {
 		s.T().Fatal()
 	}
 
-	s.repo = NewTravellerRepository(s.db)
+	logger, _ := logging.NewDevelopmentLogger()
+	s.repo = NewTravellerRepository(s.db, logger)
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {

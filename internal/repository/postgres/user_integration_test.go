@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"lizobly/cotc-db-api/pkg/logging"
 	"path/filepath"
 	"testing"
 
@@ -49,7 +50,8 @@ func TestUserRepository_Integration(t *testing.T) {
 		t.Fatal("failed to open gorm ", err)
 	}
 
-	repo := NewUserRepository(db)
+	logger, _ := logging.NewDevelopmentLogger()
+	repo := NewUserRepository(db, logger)
 
 	// existing user
 	user, err := repo.GetByUsername(ctx, "isla")

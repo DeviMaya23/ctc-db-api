@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/cotc-db-api/pkg/domain"
 	"lizobly/cotc-db-api/pkg/helpers"
+	"lizobly/cotc-db-api/pkg/logging"
 	"lizobly/cotc-db-api/user/mocks"
 	"testing"
 
@@ -25,17 +26,19 @@ func TestUserServiceSuite(t *testing.T) {
 }
 
 func (s *UserServiceSuite) SetupSuite() {
+	logger, _ := logging.NewDevelopmentLogger()
 
 	s.userRepo = new(mocks.MockUserRepository)
-	s.svc = NewUserService(s.userRepo)
+	s.svc = NewUserService(s.userRepo, logger)
 
 }
 
 func (s *UserServiceSuite) TestUserService_NewService() {
 
 	s.T().Run("success", func(t *testing.T) {
+		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockUserRepository)
-		NewUserService(repo)
+		NewUserService(repo, logger)
 	})
 }
 

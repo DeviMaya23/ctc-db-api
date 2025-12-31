@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/cotc-db-api/pkg/constants"
 	"lizobly/cotc-db-api/pkg/domain"
+	"lizobly/cotc-db-api/pkg/logging"
 	"lizobly/cotc-db-api/traveller/mocks"
 	"testing"
 
@@ -24,17 +25,19 @@ func TestTravellerServiceSuite(t *testing.T) {
 }
 
 func (s *TravellerServiceSuite) SetupSuite() {
+	logger, _ := logging.NewDevelopmentLogger()
 
 	s.travellerRepo = new(mocks.MockTravellerRepository)
-	s.svc = NewTravellerService(s.travellerRepo)
+	s.svc = NewTravellerService(s.travellerRepo, logger)
 
 }
 
 func (s *TravellerServiceSuite) TestTravellerService_NewService() {
 
 	s.T().Run("success", func(t *testing.T) {
+		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockTravellerRepository)
-		NewTravellerService(repo)
+		NewTravellerService(repo, logger)
 	})
 }
 
@@ -188,10 +191,11 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			},
 		}, {
 			name:    "failed",
+			args:    args{request: &domain.Traveller{Name: "Fiore", CommonModel: domain.CommonModel{ID: 1}}},
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Update", ctx, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("Update", ctx, args.request).Return(want.err).Once()
 
 			},
 		},
