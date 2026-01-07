@@ -29,13 +29,10 @@ func (r UserRepository) GetByUsername(ctx context.Context, username string) (res
 	err = r.db.WithContext(ctx).First(&result, "username = ?", username).Error
 
 	duration := time.Since(start)
-	logFields := []zap.Field{
+	logFields := append(
+		logging.DatabaseFields("select", "m_user", duration),
 		zap.String("user.username", username),
-		zap.String("db.system", "postgres"),
-		zap.String("db.operation", "select"),
-		zap.String("db.table", "m_user"),
-		zap.Float64("db.duration_ms", float64(duration.Milliseconds())),
-	}
+	)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -28,13 +28,10 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 	err = r.db.WithContext(ctx).Preload("Influence").First(&result, "id = ?", id).Error
 
 	duration := time.Since(start)
-	logFields := []zap.Field{
+	logFields := append(
+		logging.DatabaseFields("select", "tr_traveller", duration),
 		zap.Int("traveller.id", id),
-		zap.String("db.system", "postgres"),
-		zap.String("db.operation", "select"),
-		zap.String("db.table", "tr_traveller"),
-		zap.Float64("db.duration_ms", float64(duration.Milliseconds())),
-	}
+	)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -67,13 +64,10 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	err = r.db.WithContext(ctx).Create(input).Error
 
 	duration := time.Since(start)
-	logFields := []zap.Field{
+	logFields := append(
+		logging.DatabaseFields("insert", "tr_traveller", duration),
 		zap.String("traveller.name", input.Name),
-		zap.String("db.system", "postgres"),
-		zap.String("db.operation", "insert"),
-		zap.String("db.table", "tr_traveller"),
-		zap.Float64("db.duration_ms", float64(duration.Milliseconds())),
-	}
+	)
 
 	if err != nil {
 		logFields = append(logFields, logging.ErrorFields(err)...)
@@ -98,13 +92,10 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	err = r.db.WithContext(ctx).Updates(input).Error
 
 	duration := time.Since(start)
-	logFields := []zap.Field{
+	logFields := append(
+		logging.DatabaseFields("update", "tr_traveller", duration),
 		zap.Int64("traveller.id", input.ID),
-		zap.String("db.system", "postgres"),
-		zap.String("db.operation", "update"),
-		zap.String("db.table", "tr_traveller"),
-		zap.Float64("db.duration_ms", float64(duration.Milliseconds())),
-	}
+	)
 
 	if err != nil {
 		logFields = append(logFields, logging.ErrorFields(err)...)
@@ -127,13 +118,10 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 	err = r.db.WithContext(ctx).Delete(&domain.Traveller{}, id).Error
 
 	duration := time.Since(start)
-	logFields := []zap.Field{
+	logFields := append(
+		logging.DatabaseFields("delete", "tr_traveller", duration),
 		zap.Int("traveller.id", id),
-		zap.String("db.system", "postgres"),
-		zap.String("db.operation", "delete"),
-		zap.String("db.table", "tr_traveller"),
-		zap.Float64("db.duration_ms", float64(duration.Milliseconds())),
-	}
+	)
 
 	if err != nil {
 		logFields = append(logFields, logging.ErrorFields(err)...)
