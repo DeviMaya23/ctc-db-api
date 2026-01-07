@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	pkgValidator "lizobly/cotc-db-api/pkg/validator"
+	pkgValidator "lizobly/ctc-db-api/pkg/validator"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/iancoleman/strcase"

@@ -2,7 +2,7 @@ package rest
 
 import (
 	"context"
-	"lizobly/cotc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/domain"
 	"net/http"
 	"strconv"
 

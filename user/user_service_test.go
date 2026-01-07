@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
-	"lizobly/cotc-db-api/pkg/domain"
-	"lizobly/cotc-db-api/pkg/helpers"
-	"lizobly/cotc-db-api/pkg/logging"
-	"lizobly/cotc-db-api/user/mocks"
+	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/user/mocks"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"

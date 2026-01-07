@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"lizobly/cotc-db-api/pkg/helpers"
-	"lizobly/cotc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"

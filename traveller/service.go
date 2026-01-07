@@ -2,9 +2,9 @@ package traveller
 
 import (
 	"context"
-	"lizobly/cotc-db-api/pkg/constants"
-	"lizobly/cotc-db-api/pkg/domain"
-	"lizobly/cotc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/constants"
+	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/logging"
 
 	"go.uber.org/zap"
 )
