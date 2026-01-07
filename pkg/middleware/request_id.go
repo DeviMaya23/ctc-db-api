@@ -42,20 +42,24 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 
 			// Inject request ID into context
 			ctx := logging.WithRequestID(req.Context(), requestID)
-			c.SetRequest(req.WithContext(ctx))
 
 			// Set response header
 			res.Header().Set("X-Request-ID", requestID)
 
 			// Capture request body size (OTel standard)
 			var requestBodySize int64
+			var requestBodyBytes []byte
 			if req.Body != nil {
 				bodyBytes, err := io.ReadAll(req.Body)
 				if err == nil {
+					requestBodyBytes = bodyBytes
 					requestBodySize = int64(len(bodyBytes))
 					req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 				}
 			}
+
+			// Update request on Echo context with new context and restored body
+			c.SetRequest(req.WithContext(ctx))
 
 			// Log request start
 			logger.WithContext(ctx).Info("request started",
@@ -76,7 +80,7 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 			env := helpers.EnvWithDefault("ENVIRONMENT", "development")
 			logRequestBody := helpers.EnvWithDefaultBool("LOG_REQUEST_BODY", false)
 			if env == "development" && logRequestBody {
-				logRequestBodyIfEnabled(c, logger, ctx, requestBodySize)
+				logRequestBodyContent(requestBodyBytes, logger, ctx)
 			}
 
 			// Call next handler
@@ -107,26 +111,12 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 	}
 }
 
-// logRequestBodyIfEnabled logs the request body in development mode
-func logRequestBodyIfEnabled(c echo.Context, logger *logging.Logger, ctx context.Context, bodySize int64) {
-	req := c.Request()
-
+// logRequestBodyContent logs the request body content in development mode
+func logRequestBodyContent(bodyBytes []byte, logger *logging.Logger, ctx context.Context) {
 	// Only log if there's a body
-	if req.Body == nil || bodySize == 0 {
+	if len(bodyBytes) == 0 {
 		return
 	}
-
-	// Read body
-	bodyBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		logger.WithContext(ctx).Warn("failed to read request body for logging",
-			zap.Error(err),
-		)
-		return
-	}
-
-	// Restore body for actual handler
-	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// Truncate large bodies
 	maxBodySize := 1024 // 1KB
