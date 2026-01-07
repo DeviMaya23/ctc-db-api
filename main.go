@@ -9,6 +9,7 @@ import (
 	postgresRepo "lizobly/cotc-db-api/internal/repository/postgres"
 	"lizobly/cotc-db-api/internal/rest"
 	"lizobly/cotc-db-api/pkg/helpers"
+	"lizobly/cotc-db-api/pkg/logging"
 	pkgMiddleware "lizobly/cotc-db-api/pkg/middleware"
 	"lizobly/cotc-db-api/pkg/validator"
 	"lizobly/cotc-db-api/traveller"
@@ -20,7 +21,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -39,6 +39,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
+
+	// Initialize logger
+	env := helpers.EnvWithDefault("ENVIRONMENT", "development")
+	logger, err := logging.NewLogger(env)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+	zap.ReplaceGlobals(logger.Logger)
+
+	logger.Info("logger initialized",
+		zap.String("service.name", "cotc-db-api"),
+		zap.String("environment", env),
+	)
 
 	dbHost := os.Getenv("DATABASE_HOST")
 	dbPort := os.Getenv("DATABASE_PORT")
@@ -63,6 +77,11 @@ func main() {
 		log.Fatal("failed to ping database ", err)
 	}
 
+	logger.Info("database connected",
+		zap.String("db.system", "postgres"),
+		zap.String("db.host", dbHost),
+	)
+
 	defer func() {
 		err := dbConn.Close()
 		if err != nil {
@@ -73,18 +92,8 @@ func main() {
 	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
 	e := echo.New()
 
-	logger, _ := zap.NewProduction()
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogURI:    true,
-		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			logger.Info("request",
-				zap.String("URI", v.URI),
-				zap.Int("status", v.Status),
-			)
-			return nil
-		},
-	}))
+	// Add request ID middleware
+	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	// Validator
@@ -101,12 +110,12 @@ func main() {
 	jwtMiddleware := pkgMiddleware.NewJWTMiddleware()
 
 	// Repository
-	travellerRepo := postgresRepo.NewTravellerRepository(db)
-	userRepo := postgresRepo.NewUserRepository(db)
+	travellerRepo := postgresRepo.NewTravellerRepository(db, logger)
+	userRepo := postgresRepo.NewUserRepository(db, logger)
 
 	// Service
-	travellerService := traveller.NewTravellerService(travellerRepo)
-	userService := user.NewUserService(userRepo)
+	travellerService := traveller.NewTravellerService(travellerRepo, logger)
+	userService := user.NewUserService(userRepo, logger)
 
 	v1 := e.Group("/api/v1")
 	// JWT Middleware Flag
@@ -117,6 +126,12 @@ func main() {
 	// Handler
 	rest.NewTravellerHandler(v1, travellerService)
 	rest.NewUserHandler(v1, userService)
+
+	logger.Info("starting server",
+		zap.String("service.name", "cotc-db-api"),
+		zap.String("environment", env),
+		zap.String("address", addr),
+	)
 
 	e.Logger.Fatal(e.Start(addr))
 }

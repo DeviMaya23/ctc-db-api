@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/cotc-db-api/pkg/domain"
 	"lizobly/cotc-db-api/pkg/helpers"
+	"lizobly/cotc-db-api/pkg/logging"
 	"regexp"
 	"testing"
 
@@ -31,7 +32,8 @@ func (s *UserRepositorySuite) SetupTest() {
 		s.T().Fatal()
 	}
 
-	s.repo = NewUserRepository(s.db)
+	logger, _ := logging.NewDevelopmentLogger()
+	s.repo = NewUserRepository(s.db, logger)
 }
 
 func (s *UserRepositorySuite) TestUserRepository_GetByUsername() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"lizobly/cotc-db-api/pkg/domain"
+	"lizobly/cotc-db-api/pkg/logging"
 	"path/filepath"
 	"testing"
 
@@ -50,7 +51,8 @@ func TestTravellerRepository_Integration(t *testing.T) {
 		t.Fatal("failed to open gorm ", err)
 	}
 
-	repo := NewTravellerRepository(db)
+	logger, _ := logging.NewDevelopmentLogger()
+	repo := NewTravellerRepository(db, logger)
 
 	errCreate := repo.Create(ctx, &domain.Traveller{
 		Name:        "Fiore",
