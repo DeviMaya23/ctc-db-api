@@ -2,7 +2,7 @@ package validator
 
 import (
 	"fmt"
-	"lizobly/cotc-db-api/pkg/constants"
+	"lizobly/ctc-db-api/pkg/constants"
 
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/id"

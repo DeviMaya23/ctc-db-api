@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"lizobly/cotc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/logging"
 	"path/filepath"
 	"testing"
 

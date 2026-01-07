@@ -3,7 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
-	"lizobly/cotc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/domain"
 	"net/http"
 
 	"github.com/labstack/echo/v4"

@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"io"
-	"lizobly/cotc-db-api/pkg/validator"
+	"lizobly/ctc-db-api/pkg/validator"
 	"net/http/httptest"
 	"net/url"
 	"strings"
