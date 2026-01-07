@@ -76,10 +76,9 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 			}
 			res.Writer = blw
 
-			// Log request body in development mode only
-			env := helpers.EnvWithDefault("ENVIRONMENT", "development")
+			// Log request body when enabled
 			logRequestBody := helpers.EnvWithDefaultBool("LOG_REQUEST_BODY", false)
-			if env == "development" && logRequestBody {
+			if logRequestBody {
 				logRequestBodyContent(requestBodyBytes, logger, ctx)
 			}
 
@@ -101,8 +100,8 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 				zap.Int64("http.response.body.size", responseBodySize),
 			)
 
-			// Log response body in development mode only
-			if env == "development" && logRequestBody {
+			// Log response body when enabled
+			if logRequestBody {
 				logResponseBodyIfEnabled(blw.body.Bytes(), logger, ctx, responseBodySize)
 			}
 
@@ -111,7 +110,7 @@ func RequestIDMiddleware(logger *logging.Logger) echo.MiddlewareFunc {
 	}
 }
 
-// logRequestBodyContent logs the request body content in development mode
+// logRequestBodyContent logs the request body content when enabled
 func logRequestBodyContent(bodyBytes []byte, logger *logging.Logger, ctx context.Context) {
 	// Only log if there's a body
 	if len(bodyBytes) == 0 {
@@ -130,18 +129,18 @@ func logRequestBodyContent(bodyBytes []byte, logger *logging.Logger, ctx context
 	if err := json.Unmarshal(bodyBytes, &bodyJSON); err == nil {
 		// Filter sensitive fields
 		filteredBody := filterSensitiveFields(bodyJSON)
-		logger.WithContext(ctx).Debug("request body captured",
+		logger.WithContext(ctx).Info("request body captured",
 			zap.Any("app.request.body", filteredBody),
 		)
 	} else {
 		// Not JSON, log as string
-		logger.WithContext(ctx).Debug("request body captured",
+		logger.WithContext(ctx).Info("request body captured",
 			zap.String("app.request.body", bodyStr),
 		)
 	}
 }
 
-// logResponseBodyIfEnabled logs the response body in development mode
+// logResponseBodyIfEnabled logs the response body when enabled
 func logResponseBodyIfEnabled(bodyBytes []byte, logger *logging.Logger, ctx context.Context, bodySize int64) {
 	// Only log if there's a body
 	if bodySize == 0 {
@@ -160,12 +159,12 @@ func logResponseBodyIfEnabled(bodyBytes []byte, logger *logging.Logger, ctx cont
 	if err := json.Unmarshal(bodyBytes, &bodyJSON); err == nil {
 		// Filter sensitive fields
 		filteredBody := filterSensitiveFields(bodyJSON)
-		logger.WithContext(ctx).Debug("response body captured",
+		logger.WithContext(ctx).Info("response body captured",
 			zap.Any("app.response.body", filteredBody),
 		)
 	} else {
 		// Not JSON, log as string
-		logger.WithContext(ctx).Debug("response body captured",
+		logger.WithContext(ctx).Info("response body captured",
 			zap.String("app.response.body", bodyStr),
 		)
 	}
