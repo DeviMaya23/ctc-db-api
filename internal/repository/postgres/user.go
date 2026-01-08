@@ -5,8 +5,10 @@ import (
 	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/telemetry"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -24,11 +26,20 @@ func NewUserRepository(db *gorm.DB, logger *logging.Logger) *UserRepository {
 }
 
 func (r UserRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
+	// Start repository span
+	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.user", "UserRepository.GetByUsername",
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.table", "m_user"),
+		attribute.String("user.username", username),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	start := time.Now()
 
 	err = r.db.WithContext(ctx).First(&result, "username = ?", username).Error
 
 	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
 		logging.DatabaseFields("select", "m_user", duration),
 		zap.String("user.username", username),

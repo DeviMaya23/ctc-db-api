@@ -5,7 +5,9 @@ import (
 	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/telemetry"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +31,11 @@ func NewTravellerService(t TravellerRepository, logger *logging.Logger) *Service
 }
 
 func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err error) {
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.GetByID",
+		attribute.Int("traveller.id", id),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	s.logger.WithContext(ctx).Info("fetching traveller",
 		zap.Int("traveller.id", id),
 	)
@@ -53,6 +60,13 @@ func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err
 }
 
 func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (err error) {
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Create",
+		attribute.String("traveller.name", input.Name),
+		attribute.String("influence.name", input.Influence),
+		attribute.Int("traveller.rarity", input.Rarity),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	s.logger.WithContext(ctx).Info("creating traveller",
 		zap.String("traveller.name", input.Name),
 		zap.String("influence.name", input.Influence),
@@ -84,6 +98,12 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 }
 
 func (s Service) Update(ctx context.Context, input *domain.Traveller) (err error) {
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Update",
+		attribute.Int64("traveller.id", input.ID),
+		attribute.String("traveller.name", input.Name),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	s.logger.WithContext(ctx).Info("updating traveller",
 		zap.Int64("traveller.id", input.ID),
 		zap.String("traveller.name", input.Name),
@@ -107,6 +127,11 @@ func (s Service) Update(ctx context.Context, input *domain.Traveller) (err error
 }
 
 func (s Service) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Delete",
+		attribute.Int("traveller.id", id),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	s.logger.WithContext(ctx).Info("deleting traveller",
 		zap.Int("traveller.id", id),
 	)

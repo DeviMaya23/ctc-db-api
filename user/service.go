@@ -5,9 +5,11 @@ import (
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/telemetry"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,6 +31,12 @@ func NewUserService(u UserRepository, logger *logging.Logger) *UserService {
 }
 
 func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res domain.LoginResponse, err error) {
+	// Start service span
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.user", "UserService.Login",
+		attribute.String("user.username", req.Username),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	s.logger.WithContext(ctx).Info("login attempt",
 		zap.String("user.username", req.Username),
 	)

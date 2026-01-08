@@ -5,8 +5,10 @@ import (
 	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/logging"
+	"lizobly/ctc-db-api/pkg/telemetry"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -23,11 +25,19 @@ func NewTravellerRepository(db *gorm.DB, logger *logging.Logger) *TravellerRepos
 	}
 }
 func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
+	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.GetByID",
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.table", "tr_traveller"),
+		attribute.Int("traveller.id", id),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	start := time.Now()
 
 	err = r.db.WithContext(ctx).Preload("Influence").First(&result, "id = ?", id).Error
 
 	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
 		logging.DatabaseFields("select", "tr_traveller", duration),
 		zap.Int("traveller.id", id),
@@ -53,6 +63,14 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 }
 
 func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
+	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Create",
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.table", "tr_traveller"),
+		attribute.String("traveller.name", input.Name),
+		attribute.Int("traveller.rarity", input.Rarity),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	start := time.Now()
 
 	r.logger.WithContext(ctx).Info("creating traveller",
@@ -64,6 +82,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	err = r.db.WithContext(ctx).Create(input).Error
 
 	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
 		logging.DatabaseFields("insert", "tr_traveller", duration),
 		zap.String("traveller.name", input.Name),
@@ -82,6 +101,14 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller) (err error) {
+	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Update",
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.table", "tr_traveller"),
+		attribute.Int64("traveller.id", input.ID),
+		attribute.String("traveller.name", input.Name),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	start := time.Now()
 
 	r.logger.WithContext(ctx).Info("updating traveller",
@@ -92,6 +119,7 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	err = r.db.WithContext(ctx).Updates(input).Error
 
 	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
 		logging.DatabaseFields("update", "tr_traveller", duration),
 		zap.Int64("traveller.id", input.ID),
@@ -109,6 +137,13 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
+	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Delete",
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.table", "tr_traveller"),
+		attribute.Int("traveller.id", id),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
 	start := time.Now()
 
 	r.logger.WithContext(ctx).Info("deleting traveller",
@@ -118,6 +153,7 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 	err = r.db.WithContext(ctx).Delete(&domain.Traveller{}, id).Error
 
 	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
 		logging.DatabaseFields("delete", "tr_traveller", duration),
 		zap.Int("traveller.id", id),
