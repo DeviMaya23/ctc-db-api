@@ -18,6 +18,7 @@ services:
       - DATABASE_HOST=host.docker.internal  # Connect to host's postgres
       - DATABASE_PORT=5433                   # Your existing postgres port
       - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4318  # No http:// prefix
+      - ENVIRONMENT=production               # Use JSON logging for Promtail
     depends_on:
       jaeger:
         condition: service_started
