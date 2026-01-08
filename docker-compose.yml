@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: ctc-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"    # OTLP HTTP receiver
+      - "4317:4317"    # OTLP gRPC receiver
+    networks:
+      - ctc-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ctc-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: ctc
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ctc-network
+    restart: unless-stopped
+
+networks:
+  ctc-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

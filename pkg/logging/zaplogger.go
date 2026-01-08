@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -89,26 +90,20 @@ func (l *Logger) Named(name string) *Logger {
 	return &Logger{Logger: l.Logger.Named(name)}
 }
 
-// ExtractTraceID extracts trace ID from context
-// TODO: When OTel is added, use trace.SpanFromContext(ctx).SpanContext().TraceID().String()
+// ExtractTraceID extracts trace ID from context using OpenTelemetry
 func ExtractTraceID(ctx context.Context) string {
-	// Stubbed for future OpenTelemetry integration
-	// When OTel is integrated:
-	// spanCtx := trace.SpanFromContext(ctx).SpanContext()
-	// if spanCtx.HasTraceID() {
-	//     return spanCtx.TraceID().String()
-	// }
+	spanCtx := trace.SpanFromContext(ctx).SpanContext()
+	if spanCtx.HasTraceID() {
+		return spanCtx.TraceID().String()
+	}
 	return ""
 }
 
-// ExtractSpanID extracts span ID from context
-// TODO: When OTel is added, use trace.SpanFromContext(ctx).SpanContext().SpanID().String()
+// ExtractSpanID extracts span ID from context using OpenTelemetry
 func ExtractSpanID(ctx context.Context) string {
-	// Stubbed for future OpenTelemetry integration
-	// When OTel is integrated:
-	// spanCtx := trace.SpanFromContext(ctx).SpanContext()
-	// if spanCtx.HasSpanID() {
-	//     return spanCtx.SpanID().String()
-	// }
+	spanCtx := trace.SpanFromContext(ctx).SpanContext()
+	if spanCtx.HasSpanID() {
+		return spanCtx.SpanID().String()
+	}
 	return ""
 }
