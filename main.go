@@ -1,26 +1,28 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	_ "lizobly/ctc-db-api/docs"
-	"lizobly/ctc-db-api/user"
+	"log"
+	"os"
+	"time"
 
+	_ "lizobly/ctc-db-api/docs"
 	postgresRepo "lizobly/ctc-db-api/internal/repository/postgres"
 	"lizobly/ctc-db-api/internal/rest"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	pkgMiddleware "lizobly/ctc-db-api/pkg/middleware"
+	"lizobly/ctc-db-api/pkg/telemetry"
 	"lizobly/ctc-db-api/pkg/validator"
 	"lizobly/ctc-db-api/traveller"
-	"log"
-	"os"
-
-	echoSwagger "github.com/swaggo/echo-swagger"
-	"go.uber.org/zap"
+	"lizobly/ctc-db-api/user"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -53,6 +55,19 @@ func main() {
 		zap.String("service.name", "cotc-db-api"),
 		zap.String("environment", env),
 	)
+
+	// Initialize OpenTelemetry tracer
+	tracerProvider, err := telemetry.InitTracer(logger.Logger)
+	if err != nil {
+		logger.Fatal("Failed to initialize tracer", zap.Error(err))
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			logger.Error("Failed to shutdown tracer", zap.Error(err))
+		}
+	}()
 
 	dbHost := os.Getenv("DATABASE_HOST")
 	dbPort := os.Getenv("DATABASE_PORT")
@@ -94,6 +109,9 @@ func main() {
 
 	// Add request ID middleware
 	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
+
+	// Add OTel tracing middleware (if enabled)
+	e.Use(pkgMiddleware.TracingMiddleware(logger))
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	// Validator
