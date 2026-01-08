@@ -19,14 +19,24 @@ func StartServiceSpan(ctx context.Context, serviceName, operationName string, at
 	return ctx, span
 }
 
-// StartRepositorySpan starts a span for a repository layer operation
-func StartRepositorySpan(ctx context.Context, repositoryName, operationName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
+// StartDBSpan starts a span for a database operation with common attributes
+// operation examples: "select", "insert", "update", "delete"
+func StartDBSpan(ctx context.Context, repositoryName, operationName, operation, tableName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
 	tracer := otel.Tracer(repositoryName)
 	ctx, span := tracer.Start(ctx, operationName)
-	span.SetAttributes(attribute.String("db.operation", operationName))
+
+	// Set common database attributes
+	span.SetAttributes(
+		attribute.String("db.system", "postgres"),
+		attribute.String("db.operation", operation),
+		attribute.String("db.table", tableName),
+	)
+
+	// Add any additional attributes
 	if len(attrs) > 0 {
 		span.SetAttributes(attrs...)
 	}
+
 	return ctx, span
 }
 

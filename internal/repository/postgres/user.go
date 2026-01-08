@@ -26,10 +26,8 @@ func NewUserRepository(db *gorm.DB, logger *logging.Logger) *UserRepository {
 }
 
 func (r UserRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
-	// Start repository span
-	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.user", "UserRepository.GetByUsername",
-		attribute.String("db.system", "postgres"),
-		attribute.String("db.table", "m_user"),
+	// Start database span
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.user", "UserRepository.GetByUsername", "select", "m_user",
 		attribute.String("user.username", username),
 	)
 	defer telemetry.EndSpanWithError(span, err)

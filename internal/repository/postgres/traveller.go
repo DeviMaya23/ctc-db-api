@@ -25,9 +25,7 @@ func NewTravellerRepository(db *gorm.DB, logger *logging.Logger) *TravellerRepos
 	}
 }
 func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
-	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.GetByID",
-		attribute.String("db.system", "postgres"),
-		attribute.String("db.table", "tr_traveller"),
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetByID", "select", "tr_traveller",
 		attribute.Int("traveller.id", id),
 	)
 	defer telemetry.EndSpanWithError(span, err)
@@ -63,9 +61,7 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 }
 
 func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
-	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Create",
-		attribute.String("db.system", "postgres"),
-		attribute.String("db.table", "tr_traveller"),
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Create", "insert", "tr_traveller",
 		attribute.String("traveller.name", input.Name),
 		attribute.Int("traveller.rarity", input.Rarity),
 	)
@@ -101,9 +97,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller) (err error) {
-	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Update",
-		attribute.String("db.system", "postgres"),
-		attribute.String("db.table", "tr_traveller"),
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Update", "update", "tr_traveller",
 		attribute.Int64("traveller.id", input.ID),
 		attribute.String("traveller.name", input.Name),
 	)
@@ -137,9 +131,7 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
-	ctx, span := telemetry.StartRepositorySpan(ctx, "repository.traveller", "TravellerRepository.Delete",
-		attribute.String("db.system", "postgres"),
-		attribute.String("db.table", "tr_traveller"),
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Delete", "delete", "tr_traveller",
 		attribute.Int("traveller.id", id),
 	)
 	defer telemetry.EndSpanWithError(span, err)

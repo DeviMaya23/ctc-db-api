@@ -53,7 +53,6 @@ func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err
 	s.logger.WithContext(ctx).Info("traveller fetched successfully",
 		zap.Int("traveller.id", id),
 		zap.String("traveller.name", res.Name),
-		zap.Int("traveller.rarity", res.Rarity),
 	)
 
 	return
@@ -62,15 +61,11 @@ func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err
 func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Create",
 		attribute.String("traveller.name", input.Name),
-		attribute.String("influence.name", input.Influence),
-		attribute.Int("traveller.rarity", input.Rarity),
 	)
 	defer telemetry.EndSpanWithError(span, err)
 
 	s.logger.WithContext(ctx).Info("creating traveller",
 		zap.String("traveller.name", input.Name),
-		zap.String("influence.name", input.Influence),
-		zap.Int("traveller.rarity", input.Rarity),
 	)
 
 	newTraveller := domain.Traveller{
