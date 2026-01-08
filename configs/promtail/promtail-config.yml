@@ -63,6 +63,9 @@ scrape_configs:
             http_method: http.method
             http_route: http.route
             http_status: http.status_code
+            http_duration: http.request.duration
+            http_request_body_size: http.request.body.size
+            http_response_body_size: http.response.body.size
             service_name: service.name
             environment: environment
             db_system: db.system
@@ -81,15 +84,11 @@ scrape_configs:
           source: timestamp
           format: RFC3339Nano
 
-      # Stage 4: Set log message
-      - output:
-          source: message
-
-      # Stage 5: Drop healthcheck/readiness logs (optional)
+      # Stage 4: Drop healthcheck/readiness logs (optional)
       - match:
           selector: '{http_route="/health"}'
           action: drop
 
-      # Stage 6: Add static labels
+      # Stage 5: Add static labels
       - static_labels:
           service: ctc-db-api
