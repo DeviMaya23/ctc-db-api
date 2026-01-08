@@ -107,11 +107,12 @@ func main() {
 	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
 	e := echo.New()
 
+	// Add OTel tracing middleware FIRST (if enabled)
+	// Must run before RequestIDMiddleware so trace_id is in context
+	e.Use(pkgMiddleware.TracingMiddleware(logger))
+
 	// Add request ID middleware
 	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
-
-	// Add OTel tracing middleware (if enabled)
-	e.Use(pkgMiddleware.TracingMiddleware(logger))
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	// Validator
