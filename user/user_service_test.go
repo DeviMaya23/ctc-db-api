@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -74,7 +75,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.userRepo.On("GetByUsername", ctx, args.request.Username).Return(want.user, want.err).Once()
+				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, want.err).Once()
 
 			},
 		},
@@ -88,7 +89,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.userRepo.On("GetByUsername", ctx, args.request.Username).Return(want.user, gorm.ErrRecordNotFound).Once()
+				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, gorm.ErrRecordNotFound).Once()
 
 			},
 		},
@@ -102,7 +103,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.userRepo.On("GetByUsername", ctx, args.request.Username).Return(want.user, nil).Once()
+				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, nil).Once()
 
 			},
 		},
