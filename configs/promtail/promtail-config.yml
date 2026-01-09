@@ -28,7 +28,7 @@ scrape_configs:
     relabel_configs:
       # Only scrape ctc-db-api container
       - source_labels: ['__meta_docker_container_name']
-        regex: '/(ctc-db-api|ctc-api|cotc-db-api).*'
+        regex: '/(ctc-db-api|ctc-api|ctc-db-api).*'
         action: keep
 
       # Set job label from container name

@@ -27,7 +27,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//	@title			COTC DB API
+//	@title			CTC DB API
 //	@version		1.0
 //	@termsOfService	http://swagger.io/terms/
 
@@ -52,7 +52,7 @@ func main() {
 	zap.ReplaceGlobals(logger.Logger)
 
 	logger.Info("logger initialized",
-		zap.String("service.name", "cotc-db-api"),
+		zap.String("service.name", "ctc-db-api"),
 		zap.String("environment", env),
 	)
 
@@ -148,7 +148,7 @@ func main() {
 	rest.NewUserHandler(v1, userService)
 
 	logger.Info("starting server",
-		zap.String("service.name", "cotc-db-api"),
+		zap.String("service.name", "ctc-db-api"),
 		zap.String("environment", env),
 		zap.String("address", addr),
 	)
