@@ -17,7 +17,7 @@ datasources:
         filterByTraceID: true
         filterBySpanID: false
         customQuery: true
-        query: '{service="ctc-db-api"} |= `${__trace.traceId}`'
+        query: '{service="ctc-db-api"} |= `$${__trace.traceId}`'
         tags:
           - key: 'service.name'
             value: 'service'

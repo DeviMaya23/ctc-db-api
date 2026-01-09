@@ -33,7 +33,7 @@ info:
     email: j2qgehn84@mozmail.com
     name: Liz
   termsOfService: http://swagger.io/terms/
-  title: COTC DB API
+  title: CTC DB API
   version: "1.0"
 paths:
   /travellers/{id}:

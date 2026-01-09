@@ -12,7 +12,7 @@ import (
 type TravellerService interface {
 	GetByID(ctx context.Context, id int) (res domain.Traveller, err error)
 	Create(ctx context.Context, input domain.CreateTravellerRequest) (err error)
-	Update(ctx context.Context, input *domain.Traveller) (err error)
+	Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error)
 	Delete(ctx context.Context, id int) (err error)
 }
 
@@ -89,19 +89,23 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
 	}
 
-	var traveller domain.Traveller
-	err = ctx.Bind(&traveller)
+	var updateRequest domain.UpdateTravellerRequest
+	err = ctx.Bind(&updateRequest)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	traveller.ID = int64(id)
 
-	err = a.Service.Update(ctx.Request().Context(), &traveller)
+	err = ctx.Validate(&updateRequest)
+	if err != nil {
+		return a.ResponseErrorValidation(ctx, err)
+	}
+
+	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", traveller, nil)
+	return a.Ok(ctx, "success", updateRequest, nil)
 }
 
 func (a *TravellerHandler) Delete(ctx echo.Context) error {

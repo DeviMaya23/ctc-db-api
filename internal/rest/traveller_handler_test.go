@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"lizobly/ctc-db-api/internal/rest/mocks"
+	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -239,16 +240,10 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		statusCode   int
 	}
 
-	traveller := domain.Traveller{
-		Name:   "Fiore",
-		Rarity: 6,
-	}
-	result := domain.Traveller{
-		Name:   "Fiore",
-		Rarity: 6,
-		CommonModel: domain.CommonModel{
-			ID: int64(1),
-		},
+	updateRequest := domain.UpdateTravellerRequest{
+		Name:      "Fiore",
+		Rarity:    6,
+		Influence: constants.InfluencePower,
 	}
 
 	tests := []struct {
@@ -259,21 +254,21 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 	}{
 		{
 			name: "success update traveller",
-			args: args{"1", traveller},
+			args: args{"1", updateRequest},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "success",
-					Data:    result,
+					Data:    updateRequest,
 				},
 				statusCode: http.StatusOK,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Update", ctx.Request().Context(), &result).Return(nil).Once()
+				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(nil).Once()
 			},
 		},
 		{
 			name: "failed invalid id",
-			args: args{"", domain.Traveller{}},
+			args: args{"", domain.UpdateTravellerRequest{}},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "error validation",
@@ -291,7 +286,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		},
 		{
 			name: "failed update",
-			args: args{"1", traveller},
+			args: args{"1", updateRequest},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "error update data",
@@ -300,7 +295,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 				statusCode: http.StatusBadRequest,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Update", ctx.Request().Context(), &result).Return(gorm.ErrInvalidDB)
+				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(gorm.ErrInvalidDB)
 			},
 		},
 	}
