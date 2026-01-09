@@ -219,16 +219,16 @@ func (_c *MockTravellerService_GetByID_Call) RunAndReturn(run func(ctx context.C
 }
 
 // Update provides a mock function for the type MockTravellerService
-func (_mock *MockTravellerService) Update(ctx context.Context, input *domain.Traveller) error {
-	ret := _mock.Called(ctx, input)
+func (_mock *MockTravellerService) Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) error {
+	ret := _mock.Called(ctx, id, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Traveller) error); ok {
-		r0 = returnFunc(ctx, input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, domain.UpdateTravellerRequest) error); ok {
+		r0 = returnFunc(ctx, id, input)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -242,24 +242,30 @@ type MockTravellerService_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input *domain.Traveller
-func (_e *MockTravellerService_Expecter) Update(ctx interface{}, input interface{}) *MockTravellerService_Update_Call {
-	return &MockTravellerService_Update_Call{Call: _e.mock.On("Update", ctx, input)}
+//   - id int
+//   - input domain.UpdateTravellerRequest
+func (_e *MockTravellerService_Expecter) Update(ctx interface{}, id interface{}, input interface{}) *MockTravellerService_Update_Call {
+	return &MockTravellerService_Update_Call{Call: _e.mock.On("Update", ctx, id, input)}
 }
 
-func (_c *MockTravellerService_Update_Call) Run(run func(ctx context.Context, input *domain.Traveller)) *MockTravellerService_Update_Call {
+func (_c *MockTravellerService_Update_Call) Run(run func(ctx context.Context, id int, input domain.UpdateTravellerRequest)) *MockTravellerService_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domain.Traveller
+		var arg1 int
 		if args[1] != nil {
-			arg1 = args[1].(*domain.Traveller)
+			arg1 = args[1].(int)
+		}
+		var arg2 domain.UpdateTravellerRequest
+		if args[2] != nil {
+			arg2 = args[2].(domain.UpdateTravellerRequest)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -270,7 +276,7 @@ func (_c *MockTravellerService_Update_Call) Return(err error) *MockTravellerServ
 	return _c
 }
 
-func (_c *MockTravellerService_Update_Call) RunAndReturn(run func(ctx context.Context, input *domain.Traveller) error) *MockTravellerService_Update_Call {
+func (_c *MockTravellerService_Update_Call) RunAndReturn(run func(ctx context.Context, id int, input domain.UpdateTravellerRequest) error) *MockTravellerService_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

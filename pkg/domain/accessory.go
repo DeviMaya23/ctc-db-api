@@ -20,13 +20,26 @@ func (Accessory) TableName() string {
 
 type CreateAccessoryRequest struct {
 	Name   string `json:"name" validate:"required,lte=50"`
-	HP     int    `json:"hp" validate:"omitempty,gte=0"`
-	SP     int    `json:"sp" validate:"omitempty,gte=0"`
-	PAtk   int    `json:"patk" validate:"omitempty,gte=0"`
-	PDef   int    `json:"pdef" validate:"omitempty,gte=0"`
-	EAtk   int    `json:"eatk" validate:"omitempty,gte=0"`
-	EDef   int    `json:"edef" validate:"omitempty,gte=0"`
-	Spd    int    `json:"spd" validate:"omitempty,gte=0"`
-	Crit   int    `json:"crit" validate:"omitempty,gte=0"`
+	HP     int    `json:"hp"`
+	SP     int    `json:"sp"`
+	PAtk   int    `json:"patk"`
+	PDef   int    `json:"pdef"`
+	EAtk   int    `json:"eatk"`
+	EDef   int    `json:"edef"`
+	Spd    int    `json:"spd"`
+	Crit   int    `json:"crit"`
+	Effect string `json:"effect" validate:"omitempty,lte=200"`
+}
+
+type UpdateAccessoryRequest struct {
+	Name   string `json:"name" validate:"required,lte=50"`
+	HP     int    `json:"hp"`
+	SP     int    `json:"sp"`
+	PAtk   int    `json:"patk"`
+	PDef   int    `json:"pdef"`
+	EAtk   int    `json:"eatk"`
+	EDef   int    `json:"edef"`
+	Spd    int    `json:"spd"`
+	Crit   int    `json:"crit"`
 	Effect string `json:"effect" validate:"omitempty,lte=200"`
 }

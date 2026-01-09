@@ -94,3 +94,60 @@ func (_c *MockAccessoryRepository_Create_Call) RunAndReturn(run func(ctx context
 	_c.Call.Return(run)
 	return _c
 }
+
+// Update provides a mock function for the type MockAccessoryRepository
+func (_mock *MockAccessoryRepository) Update(ctx context.Context, input *domain.Accessory) error {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Accessory) error); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAccessoryRepository_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockAccessoryRepository_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input *domain.Accessory
+func (_e *MockAccessoryRepository_Expecter) Update(ctx interface{}, input interface{}) *MockAccessoryRepository_Update_Call {
+	return &MockAccessoryRepository_Update_Call{Call: _e.mock.On("Update", ctx, input)}
+}
+
+func (_c *MockAccessoryRepository_Update_Call) Run(run func(ctx context.Context, input *domain.Accessory)) *MockAccessoryRepository_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *domain.Accessory
+		if args[1] != nil {
+			arg1 = args[1].(*domain.Accessory)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAccessoryRepository_Update_Call) Return(err error) *MockAccessoryRepository_Update_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAccessoryRepository_Update_Call) RunAndReturn(run func(ctx context.Context, input *domain.Accessory) error) *MockAccessoryRepository_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}

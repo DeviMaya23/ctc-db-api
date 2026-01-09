@@ -20,3 +20,10 @@ type CreateTravellerRequest struct {
 	Influence string                  `json:"influence" validate:"required,influence"`
 	Accessory *CreateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
+
+type UpdateTravellerRequest struct {
+	Name      string                  `json:"name" validate:"required,lte=50"`
+	Rarity    int                     `json:"rarity" validate:"required"`
+	Influence string                  `json:"influence" validate:"required,influence"`
+	Accessory *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
+}

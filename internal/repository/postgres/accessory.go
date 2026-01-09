@@ -56,3 +56,37 @@ func (r AccessoryRepository) Create(ctx context.Context, input *domain.Accessory
 
 	return
 }
+
+func (r AccessoryRepository) Update(ctx context.Context, input *domain.Accessory) (err error) {
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Update", "update", "m_accessory",
+		attribute.Int64("accessory.id", input.ID),
+		attribute.String("accessory.name", input.Name),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
+	start := time.Now()
+
+	r.logger.WithContext(ctx).Info("updating accessory",
+		zap.Int64("accessory.id", input.ID),
+		zap.String("accessory.name", input.Name),
+	)
+
+	err = r.db.WithContext(ctx).Updates(input).Error
+
+	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
+	logFields := append(
+		logging.DatabaseFields("update", "m_accessory", duration),
+		zap.Int64("accessory.id", input.ID),
+	)
+
+	if err != nil {
+		logFields = append(logFields, logging.ErrorFields(err)...)
+		r.logger.WithContext(ctx).Error("failed to update accessory", logFields...)
+		return
+	}
+
+	r.logger.WithContext(ctx).Info("accessory updated successfully", logFields...)
+
+	return
+}

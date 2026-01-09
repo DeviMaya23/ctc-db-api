@@ -195,7 +195,8 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 
 func (s *TravellerServiceSuite) TestTravellerService_Update() {
 	type args struct {
-		request *domain.Traveller
+		id    int
+		input domain.UpdateTravellerRequest
 	}
 	type want struct {
 		err error
@@ -208,22 +209,147 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 		beforeTest func(ctx context.Context, args args, want want)
 	}{
 		{
-			name:    "success",
-			args:    args{request: &domain.Traveller{Name: "Fiore"}},
+			name: "success without accessory",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore Updated",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+				},
+			},
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Update", mock.Anything, args.request).Return(want.err).Once()
-
+				// Mock GetByID to return existing traveller without accessory
+				existingTraveller := domain.Traveller{
+					CommonModel: domain.CommonModel{ID: int64(args.id)},
+					Name:        "Fiore",
+					Rarity:      5,
+					InfluenceID: 1,
+					AccessoryID: nil,
+				}
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
+				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
-			name:    "failed",
-			args:    args{request: &domain.Traveller{Name: "Fiore", CommonModel: domain.CommonModel{ID: 1}}},
+			name: "success with new accessory creation",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore Updated",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+					Accessory: &domain.UpdateAccessoryRequest{
+						Name: "New Accessory",
+						HP:   100,
+					},
+				},
+			},
+			want:    want{},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				// Mock GetByID to return existing traveller without accessory
+				existingTraveller := domain.Traveller{
+					CommonModel: domain.CommonModel{ID: int64(args.id)},
+					Name:        "Fiore",
+					Rarity:      5,
+					InfluenceID: 1,
+					AccessoryID: nil,
+				}
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
+				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+			},
+		}, {
+			name: "success with existing accessory update",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore Updated",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+					Accessory: &domain.UpdateAccessoryRequest{
+						Name: "Updated Accessory",
+						HP:   200,
+					},
+				},
+			},
+			want:    want{},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				// Mock GetByID to return existing traveller with accessory
+				accessoryID := 42
+				existingTraveller := domain.Traveller{
+					CommonModel: domain.CommonModel{ID: int64(args.id)},
+					Name:        "Fiore",
+					Rarity:      5,
+					InfluenceID: 1,
+					AccessoryID: &accessoryID,
+				}
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
+				s.accessoryRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
+				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+			},
+		}, {
+			name: "failed to get existing traveller",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+				},
+			},
+			want:    want{err: gorm.ErrRecordNotFound},
+			wantErr: true,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(domain.Traveller{}, want.err).Once()
+			},
+		}, {
+			name: "failed to create accessory",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+					Accessory: &domain.UpdateAccessoryRequest{
+						Name: "New Accessory",
+					},
+				},
+			},
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Update", mock.Anything, args.request).Return(want.err).Once()
-
+				existingTraveller := domain.Traveller{
+					CommonModel: domain.CommonModel{ID: int64(args.id)},
+					Name:        "Fiore",
+					AccessoryID: nil,
+				}
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
+				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+			},
+		}, {
+			name: "failed to update traveller",
+			args: args{
+				id: 1,
+				input: domain.UpdateTravellerRequest{
+					Name:      "Fiore",
+					Rarity:    5,
+					Influence: constants.InfluencePower,
+				},
+			},
+			want:    want{err: gorm.ErrInvalidDB},
+			wantErr: true,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				existingTraveller := domain.Traveller{
+					CommonModel: domain.CommonModel{ID: int64(args.id)},
+					Name:        "Fiore",
+					AccessoryID: nil,
+				}
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
+				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		},
 	}
@@ -236,7 +362,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				tt.beforeTest(ctx, tt.args, tt.want)
 			}
 
-			err := s.svc.Update(ctx, tt.args.request)
+			err := s.svc.Update(ctx, tt.args.id, tt.args.input)
 			if tt.wantErr {
 				assert.Equal(s.T(), err, tt.want.err)
 				return
