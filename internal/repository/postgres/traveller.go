@@ -25,19 +25,19 @@ func NewTravellerRepository(db *gorm.DB, logger *logging.Logger) *TravellerRepos
 	}
 }
 func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetByID", "select", "tr_traveller",
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetByID", "select", "m_traveller",
 		attribute.Int("traveller.id", id),
 	)
 	defer telemetry.EndSpanWithError(span, err)
 
 	start := time.Now()
 
-	err = r.db.WithContext(ctx).Preload("Influence").First(&result, "id = ?", id).Error
+	err = r.db.WithContext(ctx).Preload("Influence").Preload("Accessory").First(&result, "id = ?", id).Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("select", "tr_traveller", duration),
+		logging.DatabaseFields("select", "m_traveller", duration),
 		zap.Int("traveller.id", id),
 	)
 
@@ -61,7 +61,7 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 }
 
 func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Create", "insert", "tr_traveller",
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Create", "insert", "m_traveller",
 		attribute.String("traveller.name", input.Name),
 		attribute.Int("traveller.rarity", input.Rarity),
 	)
@@ -80,7 +80,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("insert", "tr_traveller", duration),
+		logging.DatabaseFields("insert", "m_traveller", duration),
 		zap.String("traveller.name", input.Name),
 	)
 
@@ -97,7 +97,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller) (err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Update", "update", "tr_traveller",
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Update", "update", "m_traveller",
 		attribute.Int64("traveller.id", input.ID),
 		attribute.String("traveller.name", input.Name),
 	)
@@ -115,7 +115,7 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("update", "tr_traveller", duration),
+		logging.DatabaseFields("update", "m_traveller", duration),
 		zap.Int64("traveller.id", input.ID),
 	)
 
@@ -131,7 +131,7 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 }
 
 func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Delete", "delete", "tr_traveller",
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Delete", "delete", "m_traveller",
 		attribute.Int("traveller.id", id),
 	)
 	defer telemetry.EndSpanWithError(span, err)
@@ -147,7 +147,7 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("delete", "tr_traveller", duration),
+		logging.DatabaseFields("delete", "m_traveller", duration),
 		zap.Int("traveller.id", id),
 	)
 

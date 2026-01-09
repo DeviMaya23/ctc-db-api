@@ -130,10 +130,11 @@ func main() {
 
 	// Repository
 	travellerRepo := postgresRepo.NewTravellerRepository(db, logger)
+	accessoryRepo := postgresRepo.NewAccessoryRepository(db, logger)
 	userRepo := postgresRepo.NewUserRepository(db, logger)
 
 	// Service
-	travellerService := traveller.NewTravellerService(travellerRepo, logger)
+	travellerService := traveller.NewTravellerService(travellerRepo, accessoryRepo, logger)
 	userService := user.NewUserService(userRepo, logger)
 
 	v1 := e.Group("/api/v1")

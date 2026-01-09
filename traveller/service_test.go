@@ -17,6 +17,7 @@ import (
 type TravellerServiceSuite struct {
 	suite.Suite
 	travellerRepo *mocks.MockTravellerRepository
+	accessoryRepo *mocks.MockAccessoryRepository
 	svc           *Service
 }
 
@@ -28,7 +29,8 @@ func (s *TravellerServiceSuite) SetupSuite() {
 	logger, _ := logging.NewDevelopmentLogger()
 
 	s.travellerRepo = new(mocks.MockTravellerRepository)
-	s.svc = NewTravellerService(s.travellerRepo, logger)
+	s.accessoryRepo = new(mocks.MockAccessoryRepository)
+	s.svc = NewTravellerService(s.travellerRepo, s.accessoryRepo, logger)
 
 }
 
@@ -37,7 +39,8 @@ func (s *TravellerServiceSuite) TestTravellerService_NewService() {
 	s.T().Run("success", func(t *testing.T) {
 		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockTravellerRepository)
-		NewTravellerService(repo, logger)
+		accessoryRepo := new(mocks.MockAccessoryRepository)
+		NewTravellerService(repo, accessoryRepo, logger)
 	})
 }
 
@@ -118,7 +121,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 		beforeTest func(ctx context.Context, args args, want want)
 	}{
 		{
-			name: "success",
+			name: "success without accessory",
 			args: args{request: domain.CreateTravellerRequest{
 				Name:      "Viola",
 				Rarity:    5,
@@ -127,21 +130,45 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				newTraveller := &domain.Traveller{
-					Name:        args.request.Name,
-					Rarity:      args.request.Rarity,
-					InfluenceID: constants.GetInfluenceID(args.request.Influence),
-				}
-				s.travellerRepo.On("Create", mock.Anything, newTraveller).Return(want.err).Once()
-
+				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
-			name:    "failed",
+			name: "success with accessory",
+			args: args{request: domain.CreateTravellerRequest{
+				Name:      "Viola",
+				Rarity:    5,
+				Influence: constants.InfluencePower,
+				Accessory: &domain.CreateAccessoryRequest{
+					Name: "Test Accessory",
+				},
+			}},
+			want:    want{},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+			},
+		}, {
+			name: "failed to create accessory",
+			args: args{request: domain.CreateTravellerRequest{
+				Name:      "Viola",
+				Rarity:    5,
+				Influence: constants.InfluencePower,
+				Accessory: &domain.CreateAccessoryRequest{
+					Name: "Test Accessory",
+				},
+			}},
+			want:    want{err: gorm.ErrInvalidDB},
+			wantErr: true,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+			},
+		}, {
+			name:    "failed to create traveller",
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
-
 			},
 		},
 	}

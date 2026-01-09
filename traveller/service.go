@@ -18,15 +18,21 @@ type TravellerRepository interface {
 	Delete(ctx context.Context, id int) (err error)
 }
 
-type Service struct {
-	travellerRepo TravellerRepository
-	logger        *logging.Logger
+type AccessoryRepository interface {
+	Create(ctx context.Context, input *domain.Accessory) (err error)
 }
 
-func NewTravellerService(t TravellerRepository, logger *logging.Logger) *Service {
+type Service struct {
+	travellerRepo  TravellerRepository
+	accessoryRepo  AccessoryRepository
+	logger         *logging.Logger
+}
+
+func NewTravellerService(t TravellerRepository, a AccessoryRepository, logger *logging.Logger) *Service {
 	return &Service{
-		travellerRepo: t,
-		logger:        logger.Named("service.traveller"),
+		travellerRepo:  t,
+		accessoryRepo:  a,
+		logger:         logger.Named("service.traveller"),
 	}
 }
 
@@ -68,10 +74,50 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		zap.String("traveller.name", input.Name),
 	)
 
+	// Create accessory if provided
+	var accessoryID *int
+	if input.Accessory != nil {
+		s.logger.WithContext(ctx).Info("creating accessory for traveller",
+			zap.String("accessory.name", input.Accessory.Name),
+		)
+
+		newAccessory := domain.Accessory{
+			Name:   input.Accessory.Name,
+			HP:     input.Accessory.HP,
+			SP:     input.Accessory.SP,
+			PAtk:   input.Accessory.PAtk,
+			PDef:   input.Accessory.PDef,
+			EAtk:   input.Accessory.EAtk,
+			EDef:   input.Accessory.EDef,
+			Spd:    input.Accessory.Spd,
+			Crit:   input.Accessory.Crit,
+			Effect: input.Accessory.Effect,
+		}
+
+		err = s.accessoryRepo.Create(ctx, &newAccessory)
+		if err != nil {
+			s.logger.WithContext(ctx).Error("failed to create accessory",
+				zap.String("accessory.name", input.Accessory.Name),
+				zap.String("error.type", "repository_error"),
+				zap.String("error.message", err.Error()),
+			)
+			return
+		}
+
+		accessoryID = new(int)
+		*accessoryID = int(newAccessory.ID)
+
+		s.logger.WithContext(ctx).Info("accessory created successfully",
+			zap.String("accessory.name", input.Accessory.Name),
+			zap.Int64("accessory.id", newAccessory.ID),
+		)
+	}
+
 	newTraveller := domain.Traveller{
 		Name:        input.Name,
 		Rarity:      input.Rarity,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
+		AccessoryID: accessoryID,
 	}
 
 	err = s.travellerRepo.Create(ctx, &newTraveller)
