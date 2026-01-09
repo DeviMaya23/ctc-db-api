@@ -29,7 +29,6 @@ func TestTravellerHandlerSuite(t *testing.T) {
 }
 
 func (s *TravellerHandlerSuite) SetupSuite() {
-
 	s.e = echo.New()
 	s.travellerService = new(mocks.MockTravellerService)
 	s.handler = NewTravellerHandler(s.e.Group(""), s.travellerService)

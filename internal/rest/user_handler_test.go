@@ -29,7 +29,6 @@ func TestUserHandlerSuite(t *testing.T) {
 }
 
 func (s *UserHandlerSuite) SetupSuite() {
-
 	s.e = echo.New()
 	s.userService = new(mocks.MockUserService)
 	s.handler = NewUserHandler(s.e.Group(""), s.userService)

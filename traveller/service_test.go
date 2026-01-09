@@ -67,7 +67,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 			}},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("GetByID", ctx, args.id).Return(want.traveller, want.err).Once()
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(want.traveller, want.err).Once()
 
 			},
 		}, {
@@ -76,7 +76,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 			want:    want{err: gorm.ErrRecordNotFound},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("GetByID", ctx, args.id).Return(want.traveller, want.err).Once()
+				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(want.traveller, want.err).Once()
 
 			},
 		},
@@ -132,7 +132,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 					Rarity:      args.request.Rarity,
 					InfluenceID: constants.GetInfluenceID(args.request.Influence),
 				}
-				s.travellerRepo.On("Create", ctx, newTraveller).Return(want.err).Once()
+				s.travellerRepo.On("Create", mock.Anything, newTraveller).Return(want.err).Once()
 
 			},
 		}, {
@@ -140,7 +140,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Create", ctx, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
 
 			},
 		},
@@ -186,7 +186,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Update", ctx, args.request).Return(want.err).Once()
+				s.travellerRepo.On("Update", mock.Anything, args.request).Return(want.err).Once()
 
 			},
 		}, {
@@ -195,7 +195,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Update", ctx, args.request).Return(want.err).Once()
+				s.travellerRepo.On("Update", mock.Anything, args.request).Return(want.err).Once()
 
 			},
 		},
@@ -241,7 +241,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Delete() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Delete", ctx, args.request).Return(want.err).Once()
+				s.travellerRepo.On("Delete", mock.Anything, args.request).Return(want.err).Once()
 
 			},
 		}, {
@@ -250,7 +250,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Delete() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Delete", ctx, args.request).Return(want.err).Once()
+				s.travellerRepo.On("Delete", mock.Anything, args.request).Return(want.err).Once()
 
 			},
 		},
