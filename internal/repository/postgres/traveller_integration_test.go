@@ -4,12 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	pgGormDriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,27 +17,7 @@ import (
 func TestTravellerRepository_Integration(t *testing.T) {
 	ctx := context.Background()
 
-	initDBFilePath := filepath.Join("../../..", "testdata", "db-traveller-repo.sql")
-
-	pgContainer, err := postgres.Run(ctx, "postgres:15.3-alpine",
-		postgres.WithInitScripts(initDBFilePath),
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate pgContainer: %s", err)
-		}
-	})
-
-	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	assert.NoError(t, err)
+	connStr := helpers.GetTestDB(t)
 
 	dbConn, err := sql.Open("pgx", connStr)
 	if err != nil {
