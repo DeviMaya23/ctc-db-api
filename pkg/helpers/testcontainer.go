@@ -27,10 +27,9 @@ func GetTestDB(t *testing.T) string {
 	t.Helper()
 
 	dbOnce.Do(func() {
-		ctx := context.Background()
-		container := SetupPostgresContainer(t, ctx)
+		container := SetupPostgresContainer(t)
 
-		cs, err := container.ConnectionString(ctx, "sslmode=disable")
+		cs, err := container.ConnectionString(context.Background(), "sslmode=disable")
 		if err != nil {
 			t.Fatalf("failed to get connection string: %s", err)
 		}
@@ -42,8 +41,11 @@ func GetTestDB(t *testing.T) string {
 	return connStr
 }
 
-func SetupPostgresContainer(t *testing.T, ctx context.Context) *postgresTestContainer.PostgresContainer {
+func SetupPostgresContainer(t *testing.T) *postgresTestContainer.PostgresContainer {
 	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
 
 	newNetwork, err := network.New(ctx)
 	if err != nil {
@@ -57,7 +59,7 @@ func SetupPostgresContainer(t *testing.T, ctx context.Context) *postgresTestCont
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
+				WithStartupTimeout(1*time.Minute),
 		),
 		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 			req.Networks = []string{netName}
@@ -128,7 +130,7 @@ func runMigrations(t *testing.T, ctx context.Context, dbHost string, dbPort, net
 		t.Fatalf("Liquibase failed to start: %s", err)
 	}
 
-	defer liquibaseContainer.Terminate(ctx)
+	defer liquibaseContainer.Terminate(context.Background())
 
 	state, err := liquibaseContainer.State(ctx)
 	if err != nil {
