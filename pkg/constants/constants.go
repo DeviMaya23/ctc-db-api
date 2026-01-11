@@ -35,3 +35,44 @@ func GetInfluenceID(influenceName string) int {
 
 	return res
 }
+
+const (
+	JobWarrior    = "Warrior"
+	JobMerchant   = "Merchant"
+	JobThief      = "Thief"
+	JobApothecary = "Apothecary"
+	JobHunter     = "Hunter"
+	JobCleric     = "Cleric"
+	JobScholar    = "Scholar"
+	JobDancer     = "Dancer"
+
+	JobWarriorID    = 1
+	JobMerchantID   = 2
+	JobThiefID      = 3
+	JobApothecaryID = 4
+	JobHunterID     = 5
+	JobClericID     = 6
+	JobScholarID    = 7
+	JobDancerID     = 8
+)
+
+var (
+	jobMap = map[string]int{
+		JobWarrior:    JobWarriorID,
+		JobMerchant:   JobMerchantID,
+		JobThief:      JobThiefID,
+		JobApothecary: JobApothecaryID,
+		JobHunter:     JobHunterID,
+		JobCleric:     JobClericID,
+		JobScholar:    JobScholarID,
+		JobDancer:     JobDancerID,
+	}
+)
+
+func GetJobID(jobName string) int {
+	res, exist := jobMap[jobName]
+	if !exist {
+		return 0
+	}
+	return res
+}

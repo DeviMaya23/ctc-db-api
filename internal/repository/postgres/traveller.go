@@ -32,7 +32,7 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 
 	start := time.Now()
 
-	err = r.db.WithContext(ctx).Preload("Influence").Preload("Accessory").First(&result, "id = ?", id).Error
+	err = r.db.WithContext(ctx).Preload("Influence").Preload("Job").Preload("Accessory").First(&result, "id = ?", id).Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
@@ -73,6 +73,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 		zap.String("traveller.name", input.Name),
 		zap.Int("traveller.rarity", input.Rarity),
 		zap.Int("influence.id", int(input.InfluenceID)),
+		zap.Int("job.id", int(input.JobID)),
 	)
 
 	err = r.db.WithContext(ctx).Create(input).Error
