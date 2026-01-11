@@ -69,7 +69,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 				traveller: traveller,
 				responseBody: StandardAPIResponse{
 					Message: "success",
-					Data:    traveller,
+					Data:    domain.ToTravellerResponse(traveller),
 				},
 				statusCode: http.StatusOK,
 			},
@@ -248,6 +248,16 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		Job:       constants.JobMerchant,
 	}
 
+	updatedTraveller := domain.Traveller{
+		CommonModel: domain.CommonModel{ID: 1},
+		Name:        "Fiore",
+		Rarity:      6,
+		InfluenceID: constants.GetInfluenceID(constants.InfluencePower),
+		Influence:   domain.Influence{Name: constants.InfluencePower},
+		JobID:       constants.GetJobID(constants.JobMerchant),
+		Job:         domain.Job{Name: constants.JobMerchant},
+	}
+
 	tests := []struct {
 		name       string
 		args       args
@@ -260,12 +270,13 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "success",
-					Data:    updateRequest,
+					Data:    domain.ToTravellerResponse(updatedTraveller),
 				},
 				statusCode: http.StatusOK,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(nil).Once()
+				s.travellerService.On("GetByID", ctx.Request().Context(), 1).Return(updatedTraveller, nil).Once()
 			},
 		},
 		{

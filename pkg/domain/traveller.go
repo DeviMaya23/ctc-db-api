@@ -31,3 +31,25 @@ type UpdateTravellerRequest struct {
 	Job       string                  `json:"job" validate:"required,job"`
 	Accessory *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
+
+// Response DTOs
+
+type TravellerResponse struct {
+	Name      string             `json:"name"`
+	Rarity    int                `json:"rarity"`
+	Influence string             `json:"influence"`
+	Job       string             `json:"job"`
+	Accessory *AccessoryResponse `json:"accessory,omitempty"`
+}
+
+// Mapper functions
+
+func ToTravellerResponse(traveller Traveller) TravellerResponse {
+	return TravellerResponse{
+		Name:      traveller.Name,
+		Rarity:    traveller.Rarity,
+		Influence: traveller.Influence.Name,
+		Job:       traveller.Job.Name,
+		Accessory: ToAccessoryResponse(traveller.Accessory),
+	}
+}

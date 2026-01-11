@@ -59,7 +59,8 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error get data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", traveller, nil)
+	response := domain.ToTravellerResponse(traveller)
+	return a.Ok(ctx, "success", response, nil)
 }
 
 func (a *TravellerHandler) Create(ctx echo.Context) error {
@@ -105,7 +106,13 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", updateRequest, nil)
+	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+	if err != nil {
+		return a.ResponseError(ctx, http.StatusBadRequest, "error get updated data", err.Error())
+	}
+
+	response := domain.ToTravellerResponse(traveller)
+	return a.Ok(ctx, "success", response, nil)
 }
 
 func (a *TravellerHandler) Delete(ctx echo.Context) error {
