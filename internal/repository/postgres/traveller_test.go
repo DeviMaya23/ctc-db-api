@@ -60,8 +60,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
 	}}
 
 	s.mock.ExpectBegin()
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "id"`)).
-		WithArgs(traveller.CreatedBy, traveller.UpdatedBy, traveller.DeletedBy, traveller.CreatedAt, traveller.UpdatedAt, traveller.DeletedAt, traveller.Name, traveller.Rarity, traveller.InfluenceID, traveller.AccessoryID).
+	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`)).
+		WithArgs(traveller.CreatedBy, traveller.UpdatedBy, traveller.DeletedBy, traveller.CreatedAt, traveller.UpdatedAt, traveller.DeletedAt, traveller.Name, traveller.Rarity, traveller.InfluenceID, traveller.JobID, traveller.AccessoryID).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	s.mock.ExpectCommit()
 

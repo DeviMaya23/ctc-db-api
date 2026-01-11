@@ -37,6 +37,7 @@ func TestTravellerRepository_Integration(t *testing.T) {
 		Name:        "Fiore",
 		Rarity:      5,
 		InfluenceID: 3,
+		JobID:       1,
 	})
 	assert.Nil(t, errCreate)
 
