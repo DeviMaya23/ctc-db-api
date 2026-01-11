@@ -18,8 +18,8 @@ INSERT INTO public.m_influence
 VALUES('Prestige');
 
 INSERT INTO public.m_traveller
-("name", rarity, influence_id, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-VALUES('Fiore', 5, 3, NULL, NULL, NULL, NULL, NULL, NULL);
+("name", rarity, influence_id, job_id, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
+VALUES('Fiore', 5, 3, 1, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 INSERT INTO public.m_user
