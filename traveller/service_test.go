@@ -126,6 +126,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 				Name:      "Viola",
 				Rarity:    5,
 				Influence: constants.InfluencePower,
+				Job:       constants.JobWarrior,
 			}},
 			want:    want{},
 			wantErr: false,
@@ -137,8 +138,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			args: args{request: domain.CreateTravellerRequest{
 				Name:      "Viola",
 				Rarity:    5,
-				Influence: constants.InfluencePower,
-				Accessory: &domain.CreateAccessoryRequest{
+				Influence: constants.InfluencePower, Job: constants.JobWarrior, Accessory: &domain.CreateAccessoryRequest{
 					Name: "Test Accessory",
 				},
 			}},
@@ -216,6 +216,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 					Name:      "Fiore Updated",
 					Rarity:    5,
 					Influence: constants.InfluencePower,
+					Job:       constants.JobMerchant,
 				},
 			},
 			want:    want{},
@@ -239,8 +240,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				input: domain.UpdateTravellerRequest{
 					Name:      "Fiore Updated",
 					Rarity:    5,
-					Influence: constants.InfluencePower,
-					Accessory: &domain.UpdateAccessoryRequest{
+					Influence: constants.InfluencePower, Job: constants.JobMerchant, Accessory: &domain.UpdateAccessoryRequest{
 						Name: "New Accessory",
 						HP:   100,
 					},
@@ -268,8 +268,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				input: domain.UpdateTravellerRequest{
 					Name:      "Fiore Updated",
 					Rarity:    5,
-					Influence: constants.InfluencePower,
-					Accessory: &domain.UpdateAccessoryRequest{
+					Influence: constants.InfluencePower, Job: constants.JobMerchant, Accessory: &domain.UpdateAccessoryRequest{
 						Name: "Updated Accessory",
 						HP:   200,
 					},
@@ -298,8 +297,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				input: domain.UpdateTravellerRequest{
 					Name:      "Fiore",
 					Rarity:    5,
-					Influence: constants.InfluencePower,
-				},
+					Influence: constants.InfluencePower, Job: constants.JobMerchant},
 			},
 			want:    want{err: gorm.ErrRecordNotFound},
 			wantErr: true,
@@ -313,8 +311,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				input: domain.UpdateTravellerRequest{
 					Name:      "Fiore",
 					Rarity:    5,
-					Influence: constants.InfluencePower,
-					Accessory: &domain.UpdateAccessoryRequest{
+					Influence: constants.InfluencePower, Job: constants.JobMerchant, Accessory: &domain.UpdateAccessoryRequest{
 						Name: "New Accessory",
 					},
 				},
@@ -337,8 +334,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 				input: domain.UpdateTravellerRequest{
 					Name:      "Fiore",
 					Rarity:    5,
-					Influence: constants.InfluencePower,
-				},
+					Influence: constants.InfluencePower, Job: constants.JobMerchant},
 			},
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,

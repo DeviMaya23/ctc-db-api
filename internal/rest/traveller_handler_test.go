@@ -152,6 +152,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 		Name:      "Fiore",
 		Rarity:    5,
 		Influence: "Fame",
+		Job:       "Warrior",
 	}
 
 	tests := []struct {
@@ -244,6 +245,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		Name:      "Fiore",
 		Rarity:    6,
 		Influence: constants.InfluencePower,
+		Job:       constants.JobMerchant,
 	}
 
 	tests := []struct {

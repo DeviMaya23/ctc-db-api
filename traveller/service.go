@@ -24,16 +24,16 @@ type AccessoryRepository interface {
 }
 
 type Service struct {
-	travellerRepo  TravellerRepository
-	accessoryRepo  AccessoryRepository
-	logger         *logging.Logger
+	travellerRepo TravellerRepository
+	accessoryRepo AccessoryRepository
+	logger        *logging.Logger
 }
 
 func NewTravellerService(t TravellerRepository, a AccessoryRepository, logger *logging.Logger) *Service {
 	return &Service{
-		travellerRepo:  t,
-		accessoryRepo:  a,
-		logger:         logger.Named("service.traveller"),
+		travellerRepo: t,
+		accessoryRepo: a,
+		logger:        logger.Named("service.traveller"),
 	}
 }
 
@@ -118,6 +118,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		Name:        input.Name,
 		Rarity:      input.Rarity,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
+		JobID:       constants.GetJobID(input.Job),
 		AccessoryID: accessoryID,
 	}
 
@@ -248,6 +249,7 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 		Name:        input.Name,
 		Rarity:      input.Rarity,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
+		JobID:       constants.GetJobID(input.Job),
 		AccessoryID: accessoryID,
 	}
 

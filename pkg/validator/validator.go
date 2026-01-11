@@ -40,12 +40,21 @@ func NewValidator() *CustomValidator {
 
 	// Register Custom Validator
 	newValidator.RegisterValidation("influence", ValidateInfluence)
+	newValidator.RegisterValidation("job", ValidateJob)
 
 	// Register Custom Validator Message
 	newValidator.RegisterTranslation("influence", english, func(ut ut.Translator) error {
 		return ut.Add("influence", "{0} must be valid influence type.", true) // see universal-translator for details
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("influence", fe.Field())
+
+		return t
+	})
+
+	newValidator.RegisterTranslation("job", english, func(ut ut.Translator) error {
+		return ut.Add("job", "{0} must be valid job type.", true) // see universal-translator for details
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("job", fe.Field())
 
 		return t
 	})
@@ -66,4 +75,8 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 func ValidateInfluence(fl validator.FieldLevel) bool {
 	return constants.GetInfluenceID(fl.Field().String()) != 0
+}
+
+func ValidateJob(fl validator.FieldLevel) bool {
+	return constants.GetJobID(fl.Field().String()) != 0
 }
