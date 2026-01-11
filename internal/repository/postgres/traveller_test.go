@@ -51,6 +51,57 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 	assert.Equal(s.T(), res, want)
 }
 
+func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
+	filter := domain.ListTravellerRequest{}
+	offset := 0
+	limit := 10
+
+	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL`)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+
+	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL LIMIT $1`)).
+		WithArgs(limit).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).
+			AddRow(1, "Fiore", 5).
+			AddRow(2, "Shen", 4))
+
+	result, total, err := s.repo.GetList(context.TODO(), filter, offset, limit)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Equal(s.T(), 2, len(result))
+	assert.Equal(s.T(), "Fiore", result[0].Name)
+	assert.Equal(s.T(), 5, result[0].Rarity)
+	assert.Equal(s.T(), "Shen", result[1].Name)
+	assert.Equal(s.T(), 4, result[1].Rarity)
+}
+
+func (s *TravellerRepositorySuite) TestTravellerRepository_GetList_WithFilters() {
+	filter := domain.ListTravellerRequest{
+		Name: "Fiore",
+	}
+	offset := 0
+	limit := 10
+
+	// Expect count query with name filter
+	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND "m_traveller"."deleted_at" IS NULL`)).
+		WithArgs("%Fiore%").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	// Expect select query with name filter - GORM doesn't include OFFSET when it's 0
+	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND "m_traveller"."deleted_at" IS NULL LIMIT $2`)).
+		WithArgs("%Fiore%", limit).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).
+			AddRow(1, "Fiore", 5))
+
+	result, total, err := s.repo.GetList(context.TODO(), filter, offset, limit)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Equal(s.T(), 1, len(result))
+	assert.Equal(s.T(), "Fiore", result[0].Name)
+}
+
 func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
 	now := time.Now()
 

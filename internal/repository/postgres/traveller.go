@@ -60,6 +60,54 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 	return
 }
 
+func (r TravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error) {
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetList", "select", "m_traveller")
+	defer telemetry.EndSpanWithError(span, err)
+
+	start := time.Now()
+
+	query := r.db.WithContext(ctx).Preload("Influence").Preload("Job").Preload("Accessory")
+
+	// Apply filters
+	if filter.Name != "" {
+		query = query.Where("LOWER(name) LIKE LOWER(?)", "%"+filter.Name+"%")
+	}
+	if filter.InfluenceID != 0 {
+		query = query.Where("influence_id = ?", filter.InfluenceID)
+	}
+	if filter.JobID != 0 {
+		query = query.Where("job_id = ?", filter.JobID)
+	}
+
+	// Get total count
+	err = query.Model(&domain.Traveller{}).Count(&total).Error
+	if err != nil {
+		r.logger.WithContext(ctx).Error("failed to count travellers", zap.Error(err))
+		return
+	}
+
+	// Apply pagination
+	err = query.Offset(offset).Limit(limit).Find(&result).Error
+
+	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
+	logFields := append(
+		logging.DatabaseFields("select", "m_traveller", duration),
+		zap.Int64("total", total),
+		zap.Int("returned", len(result)),
+	)
+
+	if err != nil {
+		logFields = append(logFields, logging.ErrorFields(err)...)
+		r.logger.WithContext(ctx).Error("failed to get traveller list", logFields...)
+		return
+	}
+
+	r.logger.WithContext(ctx).Debug("traveller list retrieved", logFields...)
+
+	return
+}
+
 func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Create", "insert", "m_traveller",
 		attribute.String("traveller.name", input.Name),

@@ -32,7 +32,24 @@ type UpdateTravellerRequest struct {
 	Accessory *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
 
+// Request DTOs
+
+type ListTravellerRequest struct {
+	Name        string `query:"name"`
+	Influence   string `query:"influence" validate:"omitempty,influence" json:"-"`
+	Job         string `query:"job" validate:"omitempty,job" json:"-"`
+	InfluenceID int    `json:"-"`
+	JobID       int    `json:"-"`
+}
+
 // Response DTOs
+
+type TravellerListItemResponse struct {
+	Name      string `json:"name"`
+	Rarity    int    `json:"rarity"`
+	Influence string `json:"influence"`
+	Job       string `json:"job"`
+}
 
 type TravellerResponse struct {
 	Name      string             `json:"name"`
@@ -43,6 +60,15 @@ type TravellerResponse struct {
 }
 
 // Mapper functions
+
+func ToTravellerListItemResponse(traveller Traveller) TravellerListItemResponse {
+	return TravellerListItemResponse{
+		Name:      traveller.Name,
+		Rarity:    traveller.Rarity,
+		Influence: traveller.Influence.Name,
+		Job:       traveller.Job.Name,
+	}
+}
 
 func ToTravellerResponse(traveller Traveller) TravellerResponse {
 	return TravellerResponse{

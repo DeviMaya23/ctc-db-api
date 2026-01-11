@@ -7,12 +7,14 @@ import (
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -423,4 +425,160 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 		})
 	}
 
+}
+
+func (s *TravellerHandlerSuite) TestTravellerHandler_GetList() {
+
+	type args struct {
+		queryParams map[string]string
+	}
+	type want struct {
+		responseBody interface{}
+		statusCode   int
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		want       want
+		beforeTest func(ctx echo.Context, param args, want want)
+	}{
+		{
+			name: "success get list without filters",
+			args: args{
+				queryParams: map[string]string{},
+			},
+			want: want{
+				statusCode: http.StatusOK,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+				filter := domain.ListTravellerRequest{}
+				response := helpers.PaginatedResponse[domain.TravellerListItemResponse]{
+					Data:       []domain.TravellerListItemResponse{},
+					Page:       1,
+					PageSize:   10,
+					Total:      0,
+					TotalPages: 0,
+				}
+				s.travellerService.On("GetList", mock.Anything, filter, mock.MatchedBy(func(p helpers.PaginationParams) bool {
+					return true
+				})).Return(response, nil).Once()
+			},
+		},
+		{
+			name: "success get list with name filter",
+			args: args{
+				queryParams: map[string]string{"name": "Fiore"},
+			},
+			want: want{
+				statusCode: http.StatusOK,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+				filter := domain.ListTravellerRequest{Name: "Fiore"}
+				response := helpers.PaginatedResponse[domain.TravellerListItemResponse]{
+					Data: []domain.TravellerListItemResponse{
+						{Name: "Fiore", Rarity: 5},
+					},
+					Page:       1,
+					PageSize:   10,
+					Total:      1,
+					TotalPages: 1,
+				}
+				s.travellerService.On("GetList", mock.Anything, filter, mock.MatchedBy(func(p helpers.PaginationParams) bool {
+					return true
+				})).Return(response, nil).Once()
+			},
+		},
+		{
+			name: "success get list with multiple filters",
+			args: args{
+				queryParams: map[string]string{
+					"name":      "Fiore",
+					"influence": "Fame",
+					"job":       "Warrior",
+					"page":      "2",
+					"page_size": "20",
+				},
+			},
+			want: want{
+				statusCode: http.StatusOK,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+				filter := domain.ListTravellerRequest{
+					Name:      "Fiore",
+					Influence: "Fame",
+					Job:       "Warrior",
+				}
+				paginationParams := helpers.PaginationParams{
+					Page:     2,
+					PageSize: 20,
+				}
+				response := helpers.PaginatedResponse[domain.TravellerListItemResponse]{
+					Data: []domain.TravellerListItemResponse{
+						{Name: "Fiore", Rarity: 5},
+					},
+					Page:       2,
+					PageSize:   20,
+					Total:      1,
+					TotalPages: 1,
+				}
+				s.travellerService.On("GetList", mock.Anything, filter, paginationParams).Return(response, nil).Once()
+			},
+		},
+		{
+			name: "failed service error",
+			args: args{
+				queryParams: map[string]string{},
+			},
+			want: want{
+				responseBody: StandardAPIResponse{
+					Message: "error get data",
+					Errors:  gorm.ErrInvalidDB.Error(),
+				},
+				statusCode: http.StatusBadRequest,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+				filter := domain.ListTravellerRequest{}
+				s.travellerService.On("GetList", mock.Anything, filter, mock.MatchedBy(func(p helpers.PaginationParams) bool {
+					return true
+				})).Return(helpers.PaginatedResponse[domain.TravellerListItemResponse]{}, gorm.ErrInvalidDB).Once()
+			},
+		},
+		{
+			name: "failed filter validation",
+			args: args{
+				queryParams: map[string]string{"influence": "InvalidInfluence"},
+			},
+			want: want{
+				statusCode: http.StatusBadRequest,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			// Convert queryParams map to url.Values
+			queryValues := url.Values{}
+			for k, v := range tt.args.queryParams {
+				queryValues.Set(k, v)
+			}
+			rec, ctx := helpers.GetHTTPTestRecorder(s.T(), http.MethodGet, "/travellers", nil, queryValues, nil)
+
+			if tt.beforeTest != nil {
+				tt.beforeTest(ctx, tt.args, tt.want)
+			}
+
+			err := s.handler.GetList(ctx)
+			assert.Nil(s.T(), err)
+			assert.Equal(s.T(), tt.want.statusCode, ctx.Response().Status)
+
+			if tt.want.responseBody != nil {
+				wantRespBytes, err := json.Marshal(tt.want.responseBody)
+				assert.NoError(s.T(), err)
+				assert.Equal(s.T(), string(wantRespBytes), strings.TrimSpace(rec.Body.String()))
+			}
+		})
+	}
 }

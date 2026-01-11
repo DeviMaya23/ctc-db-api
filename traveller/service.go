@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
 
@@ -13,6 +14,7 @@ import (
 
 type TravellerRepository interface {
 	GetByID(ctx context.Context, id int) (result domain.Traveller, err error)
+	GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error)
 	Create(ctx context.Context, input *domain.Traveller) (err error)
 	Update(ctx context.Context, input *domain.Traveller) (err error)
 	Delete(ctx context.Context, id int) (err error)
@@ -61,6 +63,57 @@ func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err
 		zap.Int("traveller.id", id),
 		zap.String("traveller.name", res.Name),
 	)
+
+	return
+}
+
+func (s Service) GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error) {
+	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.GetList",
+		attribute.Int("page", params.Page),
+		attribute.Int("page_size", params.PageSize),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
+	// Normalize pagination params
+	params.Normalize()
+
+	// Populate ID fields from plaintext values
+	if filter.Influence != "" {
+		filter.InfluenceID = constants.GetInfluenceID(filter.Influence)
+	}
+	if filter.Job != "" {
+		filter.JobID = constants.GetJobID(filter.Job)
+	}
+
+	s.logger.WithContext(ctx).Info("fetching traveller list",
+		zap.Int("page", params.Page),
+		zap.Int("page_size", params.PageSize),
+		zap.String("filter.name", filter.Name),
+		zap.String("filter.influence", filter.Influence),
+		zap.String("filter.job", filter.Job),
+	)
+
+	travellers, total, err := s.travellerRepo.GetList(ctx, filter, params.Offset(), params.PageSize)
+	if err != nil {
+		s.logger.WithContext(ctx).Error("failed to fetch traveller list",
+			zap.String("error.type", "repository_error"),
+			zap.String("error.message", err.Error()),
+		)
+		return
+	}
+
+	s.logger.WithContext(ctx).Info("traveller list fetched successfully",
+		zap.Int64("total", total),
+		zap.Int("returned", len(travellers)),
+	)
+
+	// Map to response DTOs
+	items := make([]domain.TravellerListItemResponse, len(travellers))
+	for i, t := range travellers {
+		items[i] = domain.ToTravellerListItemResponse(t)
+	}
+
+	res = helpers.NewPaginatedResponse(items, params, total)
 
 	return
 }

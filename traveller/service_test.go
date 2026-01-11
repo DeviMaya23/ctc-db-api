@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/traveller/mocks"
 	"testing"
@@ -421,6 +422,212 @@ func (s *TravellerServiceSuite) TestTravellerService_Delete() {
 
 			assert.Nil(s.T(), err)
 
+		})
+	}
+}
+
+func (s *TravellerServiceSuite) TestTravellerService_GetList() {
+	type args struct {
+		filter domain.ListTravellerRequest
+		params helpers.PaginationParams
+	}
+	type want struct {
+		count         int
+		total         int64
+		err           error
+		hasPagination bool
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       want
+		wantErr    bool
+		beforeTest func(ctx context.Context, args args, want want)
+	}{
+		{
+			name: "success with no filters",
+			args: args{
+				filter: domain.ListTravellerRequest{},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         2,
+				total:         2,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := []domain.Traveller{
+					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5},
+					{CommonModel: domain.CommonModel{ID: 2}, Name: "Viola", Rarity: 4},
+				}
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with name filter",
+			args: args{
+				filter: domain.ListTravellerRequest{Name: "Fiore"},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         1,
+				total:         1,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := []domain.Traveller{
+					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5},
+				}
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with influence filter",
+			args: args{
+				filter: domain.ListTravellerRequest{Influence: constants.InfluencePower, InfluenceID: constants.GetInfluenceID(constants.InfluencePower)},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         1,
+				total:         1,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := []domain.Traveller{
+					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5, InfluenceID: constants.GetInfluenceID(constants.InfluencePower)},
+				}
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with job filter",
+			args: args{
+				filter: domain.ListTravellerRequest{Job: constants.JobWarrior, JobID: constants.GetJobID(constants.JobWarrior)},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         1,
+				total:         1,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := []domain.Traveller{
+					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5, JobID: constants.GetJobID(constants.JobWarrior)},
+				}
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with pagination defaults applied",
+			args: args{
+				filter: domain.ListTravellerRequest{},
+				params: helpers.PaginationParams{Page: 0, PageSize: 0}, // Invalid params should be normalized
+			},
+			want: want{
+				count:         10,
+				total:         50,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := make([]domain.Traveller, 10)
+				for i := 0; i < 10; i++ {
+					travellers[i] = domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 1)}, Name: "Test"}
+				}
+				// Normalized params: page 1, page_size 10, offset 0
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with pagination page 2",
+			args: args{
+				filter: domain.ListTravellerRequest{},
+				params: helpers.PaginationParams{Page: 2, PageSize: 10},
+			},
+			want: want{
+				count:         10,
+				total:         25,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := make([]domain.Traveller, 10)
+				for i := 0; i < 10; i++ {
+					travellers[i] = domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 11)}, Name: "Test"}
+				}
+				// Page 2: offset = (2-1)*10 = 10
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 10, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "success with empty result",
+			args: args{
+				filter: domain.ListTravellerRequest{Name: "NonExistent"},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         0,
+				total:         0,
+				err:           nil,
+				hasPagination: true,
+			},
+			wantErr: false,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				travellers := []domain.Traveller{}
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
+			},
+		},
+		{
+			name: "failed to fetch list",
+			args: args{
+				filter: domain.ListTravellerRequest{},
+				params: helpers.PaginationParams{Page: 1, PageSize: 10},
+			},
+			want: want{
+				count:         0,
+				total:         0,
+				err:           gorm.ErrInvalidDB,
+				hasPagination: false,
+			},
+			wantErr: true,
+			beforeTest: func(ctx context.Context, args args, want want) {
+				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(nil, int64(0), want.err).Once()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			ctx := context.TODO()
+
+			if tt.beforeTest != nil {
+				tt.beforeTest(ctx, tt.args, tt.want)
+			}
+
+			result, err := s.svc.GetList(ctx, tt.args.filter, tt.args.params)
+			if tt.wantErr {
+				assert.Equal(s.T(), err, tt.want.err)
+				return
+			}
+
+			assert.Nil(s.T(), err)
+			assert.Equal(s.T(), tt.want.count, len(result.Data))
+			assert.Equal(s.T(), tt.want.total, result.Total)
+			if tt.want.hasPagination {
+				assert.Greater(s.T(), result.Page, 0)
+				assert.Greater(s.T(), result.PageSize, 0)
+				assert.Greater(s.T(), result.TotalPages, -1)
+			}
 		})
 	}
 }
