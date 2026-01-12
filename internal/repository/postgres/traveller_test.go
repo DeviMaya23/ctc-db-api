@@ -154,6 +154,7 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
+	timeNow := time.Now()
 	tests := []struct {
 		name      string
 		traveller *domain.Traveller
@@ -161,9 +162,9 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
 	}{
 		{
 			name:      "create success",
-			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}},
 			mockSet: func() {
-				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: time.Now(), UpdatedAt: time.Now()}}
+				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}}
 				s.mock.ExpectBegin()
 				s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`)).
 					WithArgs(t.CreatedBy, t.UpdatedBy, t.DeletedBy, t.CreatedAt, t.UpdatedAt, t.DeletedAt, t.Name, t.Rarity, t.InfluenceID, t.JobID, t.AccessoryID).
