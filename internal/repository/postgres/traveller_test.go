@@ -49,11 +49,15 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 			name: "found",
 			id:   1,
 			mockSet: func() {
-				want := domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}}
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				want := domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE id = $1 AND "m_traveller"."deleted_at" IS NULL ORDER BY "m_traveller"."id" LIMIT $2`)).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).AddRow(1, want.Name, want.Rarity))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "banner", "release_date"}).AddRow(1, want.Name, want.Rarity, want.Banner, want.ReleaseDate))
 			},
-			want:    domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}},
+			want: func() domain.Traveller {
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				return domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
+			}(),
 			wantErr: false,
 		},
 	}
@@ -93,9 +97,11 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL`)).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 
+				date1 := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				date2 := time.Date(2023, 6, 20, 0, 0, 0, 0, time.UTC)
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL LIMIT $1`)).
 					WithArgs(10).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).AddRow(1, "Fiore", 5).AddRow(2, "Shen", 4))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "banner", "release_date"}).AddRow(1, "Fiore", 5, "General", date1).AddRow(2, "Shen", 4, "MT Orsterra", date2))
 			},
 			wantTot: 2,
 			wantLen: 2,
@@ -114,9 +120,10 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
 					WithArgs("%Fiore%", 1, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND influence_id = $2 AND job_id = $3 AND "m_traveller"."deleted_at" IS NULL LIMIT $4`)).
 					WithArgs("%Fiore%", 1, 1, 10).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "job_id", "influence_id", "accessory_id"}).AddRow(1, "Fiore", 5, 1, 1, 0))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "banner", "release_date", "job_id", "influence_id", "accessory_id"}).AddRow(1, "Fiore", 5, "General", releaseDate, 1, 1, 0))
 
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_accessory" WHERE "m_accessory"."id" = $1 AND "m_accessory"."deleted_at" IS NULL`)).
 					WithArgs(0).
@@ -161,13 +168,17 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
 		mockSet   func()
 	}{
 		{
-			name:      "create success",
-			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}},
+			name: "create success",
+			traveller: func() *domain.Traveller {
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				return &domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}}
+			}(),
 			mockSet: func() {
-				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}}
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				t := &domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}}
 				s.mock.ExpectBegin()
-				s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`)).
-					WithArgs(t.CreatedBy, t.UpdatedBy, t.DeletedBy, t.CreatedAt, t.UpdatedAt, t.DeletedAt, t.Name, t.Rarity, t.InfluenceID, t.JobID, t.AccessoryID).
+				s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","banner","release_date","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`)).
+					WithArgs(t.CreatedBy, t.UpdatedBy, t.DeletedBy, t.CreatedAt, t.UpdatedAt, t.DeletedAt, t.Name, t.Rarity, t.Banner, t.ReleaseDate, t.InfluenceID, t.JobID, t.AccessoryID).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 				s.mock.ExpectCommit()
 			},
@@ -191,12 +202,16 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Update() {
 		mockSet   func()
 	}{
 		{
-			name:      "update success",
-			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}},
+			name: "update success",
+			traveller: func() *domain.Traveller {
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				return &domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
+			}(),
 			mockSet: func() {
-				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}}
+				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
+				t := &domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
 				s.mock.ExpectBegin()
-				s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "updated_at"=$1,"name"=$2,"rarity"=$3 WHERE "m_traveller"."deleted_at" IS NULL AND "id" = $4`)).WithArgs(helpers.AnyTime{}, t.Name, t.Rarity, t.ID).
+				s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "updated_at"=$1,"name"=$2,"rarity"=$3,"banner"=$4,"release_date"=$5 WHERE "m_traveller"."deleted_at" IS NULL AND "id" = $6`)).WithArgs(helpers.AnyTime{}, t.Name, t.Rarity, t.Banner, t.ReleaseDate, t.ID).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				s.mock.ExpectCommit()
 			},

@@ -1,9 +1,13 @@
 package domain
 
+import "time"
+
 type Traveller struct {
 	CommonModel
 	Name        string     `json:"name" gorm:"name"`
 	Rarity      int        `json:"rarity" gorm:"rarity"`
+	Banner      string     `json:"banner" gorm:"banner"`
+	ReleaseDate time.Time  `json:"release_date" gorm:"release_date"`
 	InfluenceID int        `json:"influence_id" gorm:"influence_id"`
 	Influence   Influence  `json:"influence" gorm:"foreignKey:influence_id"`
 	JobID       int        `json:"job_id" gorm:"job_id"`
@@ -17,19 +21,23 @@ func (Traveller) TableName() string {
 }
 
 type CreateTravellerRequest struct {
-	Name      string                  `json:"name" validate:"required,lte=50"`
-	Rarity    int                     `json:"rarity" validate:"required"`
-	Influence string                  `json:"influence" validate:"required,influence"`
-	Job       string                  `json:"job" validate:"required,job"`
-	Accessory *CreateAccessoryRequest `json:"accessory" validate:"omitempty"`
+	Name        string                  `json:"name" validate:"required,lte=50"`
+	Rarity      int                     `json:"rarity" validate:"required"`
+	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
+	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
+	Influence   string                  `json:"influence" validate:"required,influence"`
+	Job         string                  `json:"job" validate:"required,job"`
+	Accessory   *CreateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
 
 type UpdateTravellerRequest struct {
-	Name      string                  `json:"name" validate:"required,lte=50"`
-	Rarity    int                     `json:"rarity" validate:"required"`
-	Influence string                  `json:"influence" validate:"required,influence"`
-	Job       string                  `json:"job" validate:"required,job"`
-	Accessory *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
+	Name        string                  `json:"name" validate:"required,lte=50"`
+	Rarity      int                     `json:"rarity" validate:"required"`
+	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
+	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
+	Influence   string                  `json:"influence" validate:"required,influence"`
+	Job         string                  `json:"job" validate:"required,job"`
+	Accessory   *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
 
 // Request DTOs
@@ -45,37 +53,45 @@ type ListTravellerRequest struct {
 // Response DTOs
 
 type TravellerListItemResponse struct {
-	Name      string `json:"name"`
-	Rarity    int    `json:"rarity"`
-	Influence string `json:"influence"`
-	Job       string `json:"job"`
+	Name        string `json:"name"`
+	Rarity      int    `json:"rarity"`
+	Banner      string `json:"banner"`
+	ReleaseDate string `json:"release_date"`
+	Influence   string `json:"influence"`
+	Job         string `json:"job"`
 }
 
 type TravellerResponse struct {
-	Name      string             `json:"name"`
-	Rarity    int                `json:"rarity"`
-	Influence string             `json:"influence"`
-	Job       string             `json:"job"`
-	Accessory *AccessoryResponse `json:"accessory,omitempty"`
+	Name        string             `json:"name"`
+	Rarity      int                `json:"rarity"`
+	Banner      string             `json:"banner"`
+	ReleaseDate string             `json:"release_date"`
+	Influence   string             `json:"influence"`
+	Job         string             `json:"job"`
+	Accessory   *AccessoryResponse `json:"accessory,omitempty"`
 }
 
 // Mapper functions
 
 func ToTravellerListItemResponse(traveller Traveller) TravellerListItemResponse {
 	return TravellerListItemResponse{
-		Name:      traveller.Name,
-		Rarity:    traveller.Rarity,
-		Influence: traveller.Influence.Name,
-		Job:       traveller.Job.Name,
+		Name:        traveller.Name,
+		Rarity:      traveller.Rarity,
+		Banner:      traveller.Banner,
+		ReleaseDate: traveller.ReleaseDate.Format("02-01-2006"),
+		Influence:   traveller.Influence.Name,
+		Job:         traveller.Job.Name,
 	}
 }
 
 func ToTravellerResponse(traveller Traveller) TravellerResponse {
 	return TravellerResponse{
-		Name:      traveller.Name,
-		Rarity:    traveller.Rarity,
-		Influence: traveller.Influence.Name,
-		Job:       traveller.Job.Name,
-		Accessory: ToAccessoryResponse(traveller.Accessory),
+		Name:        traveller.Name,
+		Rarity:      traveller.Rarity,
+		Banner:      traveller.Banner,
+		ReleaseDate: traveller.ReleaseDate.Format("02-01-2006"),
+		Influence:   traveller.Influence.Name,
+		Job:         traveller.Job.Name,
+		Accessory:   ToAccessoryResponse(traveller.Accessory),
 	}
 }
