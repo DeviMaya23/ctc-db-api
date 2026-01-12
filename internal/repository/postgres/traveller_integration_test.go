@@ -34,18 +34,26 @@ func TestTravellerRepository_Integration(t *testing.T) {
 	repo := NewTravellerRepository(db, logger)
 
 	errCreate := repo.Create(ctx, &domain.Traveller{
-		Name:        "Fiore",
+		Name:        "Celine",
 		Rarity:      5,
 		InfluenceID: 3,
-		JobID:       1,
+		JobID:       8,
 	})
 	assert.Nil(t, errCreate)
 
-	traveller, err := repo.GetByID(ctx, 1)
+	traveller, err := repo.GetByID(ctx, 2)
 	assert.Nil(t, err)
-	assert.Equal(t, traveller.Name, "Fiore")
+	assert.Equal(t, traveller.Name, "Celine")
 	assert.Equal(t, traveller.Rarity, 5)
 	assert.Equal(t, traveller.InfluenceID, 3)
+	assert.Equal(t, traveller.JobID, 8)
+
+	// Get List traveller
+	resList, total, err := repo.GetList(ctx, domain.ListTravellerRequest{}, 0, 10)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Equal(t, resList[0].Name, "Fiore")
+	assert.Equal(t, resList[1].Name, "Celine")
 
 	// Update traveller
 	err = repo.Update(ctx, &domain.Traveller{

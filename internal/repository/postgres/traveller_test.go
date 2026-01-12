@@ -38,58 +38,205 @@ func (s *TravellerRepositorySuite) SetupTest() {
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
+	tests := []struct {
+		name    string
+		id      int
+		mockSet func()
+		want    domain.Traveller
+		wantErr bool
+	}{
+		{
+			name: "found",
+			id:   1,
+			mockSet: func() {
+				want := domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}}
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE id = $1 AND "m_traveller"."deleted_at" IS NULL ORDER BY "m_traveller"."id" LIMIT $2`)).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).AddRow(1, want.Name, want.Rarity))
+			},
+			want:    domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}},
+			wantErr: false,
+		},
+	}
 
-	id := 1
-	want := domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(id)}}
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE id = $1 AND "m_traveller"."deleted_at" IS NULL ORDER BY "m_traveller"."id" LIMIT $2`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).
-			AddRow(1, want.Name, want.Rarity))
+			res, err := s.repo.GetByID(context.TODO(), tt.id)
+			if tt.wantErr {
+				assert.Error(s.T(), err)
+				return
+			}
+			assert.NoError(s.T(), err)
+			assert.Equal(s.T(), tt.want, res)
+		})
+	}
+}
 
-	res, err := s.repo.GetByID(context.TODO(), id)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), res, want)
+func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
+	tests := []struct {
+		name    string
+		filter  domain.ListTravellerRequest
+		offset  int
+		limit   int
+		mockSet func()
+		wantTot int64
+		wantLen int
+	}{
+		{
+			name:   "no filters",
+			filter: domain.ListTravellerRequest{},
+			offset: 0,
+			limit:  10,
+			mockSet: func() {
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL`)).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE "m_traveller"."deleted_at" IS NULL LIMIT $1`)).
+					WithArgs(10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).AddRow(1, "Fiore", 5).AddRow(2, "Shen", 4))
+			},
+			wantTot: 2,
+			wantLen: 2,
+		},
+		{
+			name: "with filters",
+			filter: domain.ListTravellerRequest{
+				Name:        "Fiore",
+				JobID:       1,
+				InfluenceID: 1,
+			},
+			offset: 0,
+			limit:  10,
+			mockSet: func() {
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND influence_id = $2 AND job_id = $3 AND "m_traveller"."deleted_at" IS NULL`)).
+					WithArgs("%Fiore%", 1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND influence_id = $2 AND job_id = $3 AND "m_traveller"."deleted_at" IS NULL LIMIT $4`)).
+					WithArgs("%Fiore%", 1, 1, 10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "job_id", "influence_id", "accessory_id"}).AddRow(1, "Fiore", 5, 1, 1, 0))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_accessory" WHERE "m_accessory"."id" = $1 AND "m_accessory"."deleted_at" IS NULL`)).
+					WithArgs(0).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name"}))
+			},
+			wantTot: 1,
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
+
+			result, total, err := s.repo.GetList(context.TODO(), tt.filter, tt.offset, tt.limit)
+			assert.NoError(s.T(), err)
+			assert.Equal(s.T(), tt.wantTot, total)
+			assert.Equal(s.T(), tt.wantLen, len(result))
+
+			if tt.wantLen > 0 {
+				for i := 0; i < tt.wantLen; i++ {
+					assert.Equal(s.T(), tt.filter.Name == "" || regexp.MustCompile("(?i)"+tt.filter.Name).MatchString(result[i].Name), true)
+					if tt.filter.InfluenceID != 0 {
+						assert.Equal(s.T(), result[i].InfluenceID, tt.filter.InfluenceID)
+					}
+					if tt.filter.JobID != 0 {
+						assert.Equal(s.T(), result[i].JobID, tt.filter.JobID)
+					}
+				}
+			}
+
+		})
+	}
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
-	now := time.Now()
+	timeNow := time.Now()
+	tests := []struct {
+		name      string
+		traveller *domain.Traveller
+		mockSet   func()
+	}{
+		{
+			name:      "create success",
+			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}},
+			mockSet: func() {
+				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{CreatedAt: timeNow, UpdatedAt: timeNow}}
+				s.mock.ExpectBegin()
+				s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`)).
+					WithArgs(t.CreatedBy, t.UpdatedBy, t.DeletedBy, t.CreatedAt, t.UpdatedAt, t.DeletedAt, t.Name, t.Rarity, t.InfluenceID, t.JobID, t.AccessoryID).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+				s.mock.ExpectCommit()
+			},
+		},
+	}
 
-	traveller := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}}
-
-	s.mock.ExpectBegin()
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "m_traveller" ("created_by","updated_by","deleted_by","created_at","updated_at","deleted_at","name","rarity","influence_id","job_id","accessory_id") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "id"`)).
-		WithArgs(traveller.CreatedBy, traveller.UpdatedBy, traveller.DeletedBy, traveller.CreatedAt, traveller.UpdatedAt, traveller.DeletedAt, traveller.Name, traveller.Rarity, traveller.InfluenceID, traveller.JobID, traveller.AccessoryID).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	s.mock.ExpectCommit()
-
-	err := s.repo.Create(context.TODO(), traveller)
-	assert.NoError(s.T(), err)
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
+			err := s.repo.Create(context.TODO(), tt.traveller)
+			assert.NoError(s.T(), err)
+		})
+	}
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_Update() {
+	tests := []struct {
+		name      string
+		traveller *domain.Traveller
+		mockSet   func()
+	}{
+		{
+			name:      "update success",
+			traveller: &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}},
+			mockSet: func() {
+				t := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{ID: int64(1)}}
+				s.mock.ExpectBegin()
+				s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "updated_at"=$1,"name"=$2,"rarity"=$3 WHERE "m_traveller"."deleted_at" IS NULL AND "id" = $4`)).WithArgs(helpers.AnyTime{}, t.Name, t.Rarity, t.ID).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				s.mock.ExpectCommit()
+			},
+		},
+	}
 
-	traveller := &domain.Traveller{Name: "Fiore", Rarity: 5, CommonModel: domain.CommonModel{
-		ID: int64(1),
-	}}
-
-	s.mock.ExpectBegin()
-	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "updated_at"=$1,"name"=$2,"rarity"=$3 WHERE "m_traveller"."deleted_at" IS NULL AND "id" = $4`)).WithArgs(helpers.AnyTime{}, traveller.Name, traveller.Rarity, traveller.ID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	s.mock.ExpectCommit()
-	err := s.repo.Update(context.TODO(), traveller)
-	assert.NoError(s.T(), err)
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
+			err := s.repo.Update(context.TODO(), tt.traveller)
+			assert.NoError(s.T(), err)
+		})
+	}
 }
 
 func (s *TravellerRepositorySuite) TestTravellerRepository_Delete() {
+	tests := []struct {
+		name    string
+		id      int
+		mockSet func()
+	}{
+		{
+			name: "delete success",
+			id:   1,
+			mockSet: func() {
+				s.mock.ExpectBegin()
+				s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "deleted_at"=$1 WHERE "m_traveller"."id" = $2 AND "m_traveller"."deleted_at" IS NULL`)).WithArgs(helpers.AnyTime{}, 1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				s.mock.ExpectCommit()
+			},
+		},
+	}
 
-	id := 1
-	s.mock.ExpectBegin()
-	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "m_traveller" SET "deleted_at"=$1 WHERE "m_traveller"."id" = $2 AND "m_traveller"."deleted_at" IS NULL`)).WithArgs(helpers.AnyTime{}, id).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	s.mock.ExpectCommit()
-	err := s.repo.Delete(context.TODO(), id)
-	assert.NoError(s.T(), err)
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
+			err := s.repo.Delete(context.TODO(), tt.id)
+			assert.NoError(s.T(), err)
+		})
+	}
 }

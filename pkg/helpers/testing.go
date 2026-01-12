@@ -71,6 +71,7 @@ func GetHTTPTestRecorder(t *testing.T, method, url string, requestBody interface
 				query.Add(key, value)
 			}
 		}
+		req.URL.RawQuery = query.Encode()
 	}
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)

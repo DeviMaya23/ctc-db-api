@@ -43,3 +43,38 @@ type UpdateAccessoryRequest struct {
 	Crit   int    `json:"crit"`
 	Effect string `json:"effect" validate:"omitempty,lte=200"`
 }
+
+// Response DTOs
+
+type AccessoryResponse struct {
+	Name   string `json:"name"`
+	HP     int    `json:"hp"`
+	SP     int    `json:"sp"`
+	PAtk   int    `json:"patk"`
+	PDef   int    `json:"pdef"`
+	EAtk   int    `json:"eatk"`
+	EDef   int    `json:"edef"`
+	Spd    int    `json:"spd"`
+	Crit   int    `json:"crit"`
+	Effect string `json:"effect"`
+}
+
+// Mapper functions
+
+func ToAccessoryResponse(accessory *Accessory) *AccessoryResponse {
+	if accessory == nil {
+		return nil
+	}
+	return &AccessoryResponse{
+		Name:   accessory.Name,
+		HP:     accessory.HP,
+		SP:     accessory.SP,
+		PAtk:   accessory.PAtk,
+		PDef:   accessory.PDef,
+		EAtk:   accessory.EAtk,
+		EDef:   accessory.EDef,
+		Spd:    accessory.Spd,
+		Crit:   accessory.Crit,
+		Effect: accessory.Effect,
+	}
+}

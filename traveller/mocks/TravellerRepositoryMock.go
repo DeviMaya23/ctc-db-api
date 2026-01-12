@@ -218,6 +218,92 @@ func (_c *MockTravellerRepository_GetByID_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// GetList provides a mock function for the type MockTravellerRepository
+func (_mock *MockTravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]domain.Traveller, int64, error) {
+	ret := _mock.Called(ctx, filter, offset, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetList")
+	}
+
+	var r0 []domain.Traveller
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) ([]domain.Traveller, int64, error)); ok {
+		return returnFunc(ctx, filter, offset, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) []domain.Traveller); ok {
+		r0 = returnFunc(ctx, filter, offset, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Traveller)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ListTravellerRequest, int, int) int64); ok {
+		r1 = returnFunc(ctx, filter, offset, limit)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, domain.ListTravellerRequest, int, int) error); ok {
+		r2 = returnFunc(ctx, filter, offset, limit)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockTravellerRepository_GetList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetList'
+type MockTravellerRepository_GetList_Call struct {
+	*mock.Call
+}
+
+// GetList is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filter domain.ListTravellerRequest
+//   - offset int
+//   - limit int
+func (_e *MockTravellerRepository_Expecter) GetList(ctx interface{}, filter interface{}, offset interface{}, limit interface{}) *MockTravellerRepository_GetList_Call {
+	return &MockTravellerRepository_GetList_Call{Call: _e.mock.On("GetList", ctx, filter, offset, limit)}
+}
+
+func (_c *MockTravellerRepository_GetList_Call) Run(run func(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int)) *MockTravellerRepository_GetList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.ListTravellerRequest
+		if args[1] != nil {
+			arg1 = args[1].(domain.ListTravellerRequest)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTravellerRepository_GetList_Call) Return(result []domain.Traveller, total int64, err error) *MockTravellerRepository_GetList_Call {
+	_c.Call.Return(result, total, err)
+	return _c
+}
+
+func (_c *MockTravellerRepository_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]domain.Traveller, int64, error)) *MockTravellerRepository_GetList_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockTravellerRepository
 func (_mock *MockTravellerRepository) Update(ctx context.Context, input *domain.Traveller) error {
 	ret := _mock.Called(ctx, input)

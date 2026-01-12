@@ -7,6 +7,7 @@ package mocks
 import (
 	"context"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/helpers"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -214,6 +215,78 @@ func (_c *MockTravellerService_GetByID_Call) Return(res domain.Traveller, err er
 }
 
 func (_c *MockTravellerService_GetByID_Call) RunAndReturn(run func(ctx context.Context, id int) (domain.Traveller, error)) *MockTravellerService_GetByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetList provides a mock function for the type MockTravellerService
+func (_mock *MockTravellerService) GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (helpers.PaginatedResponse[domain.TravellerListItemResponse], error) {
+	ret := _mock.Called(ctx, filter, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetList")
+	}
+
+	var r0 helpers.PaginatedResponse[domain.TravellerListItemResponse]
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, helpers.PaginationParams) (helpers.PaginatedResponse[domain.TravellerListItemResponse], error)); ok {
+		return returnFunc(ctx, filter, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, helpers.PaginationParams) helpers.PaginatedResponse[domain.TravellerListItemResponse]); ok {
+		r0 = returnFunc(ctx, filter, params)
+	} else {
+		r0 = ret.Get(0).(helpers.PaginatedResponse[domain.TravellerListItemResponse])
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ListTravellerRequest, helpers.PaginationParams) error); ok {
+		r1 = returnFunc(ctx, filter, params)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTravellerService_GetList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetList'
+type MockTravellerService_GetList_Call struct {
+	*mock.Call
+}
+
+// GetList is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filter domain.ListTravellerRequest
+//   - params helpers.PaginationParams
+func (_e *MockTravellerService_Expecter) GetList(ctx interface{}, filter interface{}, params interface{}) *MockTravellerService_GetList_Call {
+	return &MockTravellerService_GetList_Call{Call: _e.mock.On("GetList", ctx, filter, params)}
+}
+
+func (_c *MockTravellerService_GetList_Call) Run(run func(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams)) *MockTravellerService_GetList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.ListTravellerRequest
+		if args[1] != nil {
+			arg1 = args[1].(domain.ListTravellerRequest)
+		}
+		var arg2 helpers.PaginationParams
+		if args[2] != nil {
+			arg2 = args[2].(helpers.PaginationParams)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTravellerService_GetList_Call) Return(res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error) *MockTravellerService_GetList_Call {
+	_c.Call.Return(res, err)
+	return _c
+}
+
+func (_c *MockTravellerService_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (helpers.PaginatedResponse[domain.TravellerListItemResponse], error)) *MockTravellerService_GetList_Call {
 	_c.Call.Return(run)
 	return _c
 }
