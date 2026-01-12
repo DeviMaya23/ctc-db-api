@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"lizobly/ctc-db-api/accessory"
 	_ "lizobly/ctc-db-api/docs"
 	postgresRepo "lizobly/ctc-db-api/internal/repository/postgres"
 	"lizobly/ctc-db-api/internal/rest"
@@ -136,6 +137,7 @@ func main() {
 	// Service
 	travellerService := traveller.NewTravellerService(travellerRepo, accessoryRepo, logger)
 	userService := user.NewUserService(userRepo, logger)
+	accessoryService := accessory.NewAccessoryService(accessoryRepo, logger)
 
 	v1 := e.Group("/api/v1")
 	// JWT Middleware Flag
@@ -146,6 +148,7 @@ func main() {
 	// Handler
 	rest.NewTravellerHandler(v1, travellerService)
 	rest.NewUserHandler(v1, userService)
+	rest.NewAccessoryHandler(v1, accessoryService)
 
 	logger.Info("starting server",
 		zap.String("service.name", "ctc-db-api"),
