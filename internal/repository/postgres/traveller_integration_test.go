@@ -31,51 +31,82 @@ func TestTravellerRepository_Integration(t *testing.T) {
 	}
 
 	logger, _ := logging.NewDevelopmentLogger()
-	repo := NewTravellerRepository(db, logger)
 
-	errCreate := repo.Create(ctx, &domain.Traveller{
-		Name:        "Celine",
-		Rarity:      5,
-		InfluenceID: 3,
-		JobID:       8,
+	t.Run("create and retrieve traveller with accessory", func(t *testing.T) {
+		tx := db.Begin()
+		defer tx.Rollback()
+
+		repo := NewTravellerRepository(tx, logger)
+
+		newAcc := &domain.Accessory{Name: "Yusia's Fan", HP: 100, SP: 50}
+		assert.Nil(t, tx.WithContext(ctx).Create(newAcc).Error)
+		newAccID := int(newAcc.ID)
+
+		assert.Nil(t, repo.Create(ctx, &domain.Traveller{
+			Name:        "Celine",
+			Rarity:      5,
+			InfluenceID: 3,
+			JobID:       8,
+			AccessoryID: &newAccID,
+		}))
+
+		traveller, err := repo.GetByID(ctx, int(newAcc.ID))
+		assert.Nil(t, err)
+		assert.Equal(t, "Celine", traveller.Name)
+		assert.Equal(t, 5, traveller.Rarity)
+		assert.Equal(t, "Yusia's Fan", traveller.Accessory.Name)
 	})
-	assert.Nil(t, errCreate)
 
-	traveller, err := repo.GetByID(ctx, 2)
-	assert.Nil(t, err)
-	assert.Equal(t, traveller.Name, "Celine")
-	assert.Equal(t, traveller.Rarity, 5)
-	assert.Equal(t, traveller.InfluenceID, 3)
-	assert.Equal(t, traveller.JobID, 8)
+	t.Run("list travellers with pagination", func(t *testing.T) {
+		tx := db.Begin()
+		defer tx.Rollback()
 
-	// Get List traveller
-	resList, total, err := repo.GetList(ctx, domain.ListTravellerRequest{}, 0, 10)
-	assert.Nil(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Equal(t, resList[0].Name, "Fiore")
-	assert.Equal(t, resList[1].Name, "Celine")
+		repo := NewTravellerRepository(tx, logger)
 
-	// Update traveller
-	err = repo.Update(ctx, &domain.Traveller{
-		CommonModel: domain.CommonModel{
-			ID: 1,
-		},
-		Rarity: 6,
+		assert.Nil(t, tx.WithContext(ctx).Create(&domain.Traveller{Name: "Tahir", Rarity: 4, InfluenceID: 2, JobID: 1}).Error)
+		assert.Nil(t, tx.WithContext(ctx).Create(&domain.Traveller{Name: "Celine", Rarity: 5, InfluenceID: 3, JobID: 8}).Error)
+
+		resList, total, err := repo.GetList(ctx, domain.ListTravellerRequest{}, 0, 10)
+		assert.Nil(t, err)
+		assert.Equal(t, int64(2), total)
+
+		assert.Equal(t, "Tahir", resList[0].Name)
+		assert.Equal(t, "Celine", resList[1].Name)
 	})
-	assert.Nil(t, err)
 
-	// Check updated traveller
-	traveller, err = repo.GetByID(ctx, 1)
-	assert.Nil(t, err)
-	assert.Equal(t, traveller.Name, "Fiore")
-	assert.Equal(t, traveller.Rarity, 6)
+	t.Run("update traveller fields", func(t *testing.T) {
+		tx := db.Begin()
+		defer tx.Rollback()
 
-	// Delete traveller
-	err = repo.Delete(ctx, 1)
-	assert.Nil(t, err)
+		repo := NewTravellerRepository(tx, logger)
 
-	// Check if deleted
-	traveller, err = repo.GetByID(ctx, 1)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+		tr := &domain.Traveller{Name: "Meena", Rarity: 4, InfluenceID: 1, JobID: 1}
+		assert.Nil(t, tx.WithContext(ctx).Create(tr).Error)
 
+		err := repo.Update(ctx, &domain.Traveller{
+			CommonModel: domain.CommonModel{ID: tr.ID},
+			Rarity:      6,
+			Accessory:   &domain.Accessory{Name: "Ribbon"},
+		})
+		assert.Nil(t, err)
+
+		updated, err := repo.GetByID(ctx, int(tr.ID))
+		assert.Nil(t, err)
+		assert.Equal(t, 6, updated.Rarity)
+		assert.Equal(t, "Ribbon", updated.Accessory.Name)
+	})
+	t.Run("delete traveller", func(t *testing.T) {
+		tx := db.Begin()
+		defer tx.Rollback()
+
+		repo := NewTravellerRepository(tx, logger)
+
+		tr := &domain.Traveller{Name: "DeleteMe", Rarity: 3, InfluenceID: 1, JobID: 1}
+		assert.Nil(t, tx.WithContext(ctx).Create(tr).Error)
+
+		assert.Nil(t, repo.Delete(ctx, int(tr.ID)))
+
+		_, err := repo.GetByID(ctx, int(tr.ID))
+		assert.Equal(t, gorm.ErrRecordNotFound, err)
+	})
 }
