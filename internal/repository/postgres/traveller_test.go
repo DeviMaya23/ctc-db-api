@@ -117,6 +117,10 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND influence_id = $2 AND job_id = $3 AND "m_traveller"."deleted_at" IS NULL LIMIT $4`)).
 					WithArgs("%Fiore%", 1, 1, 10).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "job_id", "influence_id", "accessory_id"}).AddRow(1, "Fiore", 5, 1, 1, 0))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_accessory" WHERE "m_accessory"."id" = $1 AND "m_accessory"."deleted_at" IS NULL`)).
+					WithArgs(0).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name"}))
 			},
 			wantTot: 1,
 			wantLen: 1,
