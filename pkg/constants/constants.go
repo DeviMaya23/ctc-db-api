@@ -76,3 +76,9 @@ func GetJobID(jobName string) int {
 	}
 	return res
 }
+
+// Order direction constants
+const (
+	OrderDirAsc  = "asc"
+	OrderDirDesc = "desc"
+)

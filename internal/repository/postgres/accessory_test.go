@@ -67,3 +67,99 @@ func (s *AccessoryRepositorySuite) TestAccessoryRepository_Create() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), accessory.ID)
 }
+
+func (s *AccessoryRepositorySuite) TestAccessoryRepository_GetList() {
+	tests := []struct {
+		name    string
+		filter  domain.ListAccessoryRequest
+		offset  int
+		limit   int
+		mockSet func()
+		wantTot int64
+		wantLen int
+	}{
+		{
+			name:   "no filters",
+			filter: domain.ListAccessoryRequest{},
+			offset: 0,
+			limit:  10,
+			mockSet: func() {
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE "m_accessory"."deleted_at" IS NULL`)).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT m_accessory.*, m_traveller.name as owner FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE "m_accessory"."deleted_at" IS NULL LIMIT $1`)).
+					WithArgs(10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "hp", "sp", "patk", "pdef", "eatk", "edef", "spd", "crit", "effect", "owner"}).
+						AddRow(1, "Crown of Wisdom", 150, 80, 45, 30, 60, 25, 12, 8, "Increases elemental damage", "Fiore").
+						AddRow(2, "Ring of Power", 200, 100, 80, 50, 70, 40, 15, 10, "Increases physical damage", "Noctis"))
+			},
+			wantTot: 2,
+			wantLen: 2,
+		},
+		{
+			name: "with owner filter",
+			filter: domain.ListAccessoryRequest{
+				Owner: "Fiore",
+			},
+			offset: 0,
+			limit:  10,
+			mockSet: func() {
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE LOWER(m_traveller.name) LIKE LOWER($1) AND "m_accessory"."deleted_at" IS NULL`)).
+					WithArgs("%Fiore%").
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT m_accessory.*, m_traveller.name as owner FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE LOWER(m_traveller.name) LIKE LOWER($1) AND "m_accessory"."deleted_at" IS NULL LIMIT $2`)).
+					WithArgs("%Fiore%", 10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "hp", "sp", "patk", "pdef", "eatk", "edef", "spd", "crit", "effect", "owner"}).
+						AddRow(1, "Crown of Wisdom", 150, 80, 45, 30, 60, 25, 12, 8, "Increases elemental damage", "Fiore"))
+			},
+			wantTot: 1,
+			wantLen: 1,
+		},
+		{
+			name: "with effect and ordering filters",
+			filter: domain.ListAccessoryRequest{
+				Effect:   "Elemental",
+				OrderBy:  "hp",
+				OrderDir: "DESC",
+			},
+			offset: 0,
+			limit:  10,
+			mockSet: func() {
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE LOWER(m_accessory.effect) LIKE LOWER($1) AND "m_accessory"."deleted_at" IS NULL`)).
+					WithArgs("%Elemental%").
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT m_accessory.*, m_traveller.name as owner FROM "m_accessory" LEFT JOIN m_traveller ON m_accessory.id = m_traveller.accessory_id WHERE LOWER(m_accessory.effect) LIKE LOWER($1) AND "m_accessory"."deleted_at" IS NULL ORDER BY m_accessory.hp DESC LIMIT $2`)).
+					WithArgs("%Elemental%", 10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "hp", "sp", "patk", "pdef", "eatk", "edef", "spd", "crit", "effect", "owner"}).
+						AddRow(1, "Crown of Wisdom", 150, 80, 45, 30, 60, 25, 12, 8, "Increases elemental damage by 15%", "Fiore"))
+			},
+			wantTot: 1,
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			tt.mockSet()
+
+			result, ownerNames, total, err := s.repo.GetList(context.TODO(), tt.filter, tt.offset, tt.limit)
+			assert.NoError(s.T(), err)
+			assert.Equal(s.T(), tt.wantTot, total)
+			assert.Equal(s.T(), tt.wantLen, len(result))
+
+			if tt.wantLen > 0 {
+				for i := 0; i < tt.wantLen; i++ {
+					if tt.filter.Owner != "" {
+						assert.Equal(s.T(), regexp.MustCompile("(?i)"+tt.filter.Owner).MatchString(ownerNames[result[i].ID]), true)
+					}
+					if tt.filter.Effect != "" {
+						assert.Equal(s.T(), regexp.MustCompile("(?i)"+tt.filter.Effect).MatchString(result[i].Effect), true)
+					}
+				}
+			}
+		})
+	}
+}
