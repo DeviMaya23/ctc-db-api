@@ -60,7 +60,6 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			// reinitialize mock DB state to isolate expectations
 			s.SetupTest()
 			tt.mockSet()
 
@@ -101,31 +100,6 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList() {
 			wantTot: 2,
 			wantLen: 2,
 		},
-	}
-
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.SetupTest()
-			tt.mockSet()
-
-			result, total, err := s.repo.GetList(context.TODO(), tt.filter, tt.offset, tt.limit)
-			assert.NoError(s.T(), err)
-			assert.Equal(s.T(), tt.wantTot, total)
-			assert.Equal(s.T(), tt.wantLen, len(result))
-		})
-	}
-}
-
-func (s *TravellerRepositorySuite) TestTravellerRepository_GetList_WithFilters() {
-	tests := []struct {
-		name    string
-		filter  domain.ListTravellerRequest
-		offset  int
-		limit   int
-		mockSet func()
-		wantTot int64
-		wantLen int
-	}{
 		{
 			name: "with filters",
 			filter: domain.ListTravellerRequest{
@@ -142,7 +116,7 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList_WithFilters()
 
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE LOWER(name) LIKE LOWER($1) AND influence_id = $2 AND job_id = $3 AND "m_traveller"."deleted_at" IS NULL LIMIT $4`)).
 					WithArgs("%Fiore%", 1, 1, 10).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity"}).AddRow(1, "Fiore", 5))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "job_id", "influence_id", "accessory_id"}).AddRow(1, "Fiore", 5, 1, 1, 0))
 			},
 			wantTot: 1,
 			wantLen: 1,
@@ -158,9 +132,19 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetList_WithFilters()
 			assert.NoError(s.T(), err)
 			assert.Equal(s.T(), tt.wantTot, total)
 			assert.Equal(s.T(), tt.wantLen, len(result))
-			if len(result) > 0 {
-				assert.Equal(s.T(), "Fiore", result[0].Name)
+
+			if tt.wantLen > 0 {
+				for i := 0; i < tt.wantLen; i++ {
+					assert.Equal(s.T(), tt.filter.Name == "" || regexp.MustCompile("(?i)"+tt.filter.Name).MatchString(result[i].Name), true)
+					if tt.filter.InfluenceID != 0 {
+						assert.Equal(s.T(), result[i].InfluenceID, tt.filter.InfluenceID)
+					}
+					if tt.filter.JobID != 0 {
+						assert.Equal(s.T(), result[i].JobID, tt.filter.JobID)
+					}
+				}
 			}
+
 		})
 	}
 }

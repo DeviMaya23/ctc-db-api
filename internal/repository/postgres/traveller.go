@@ -66,7 +66,7 @@ func (r TravellerRepository) GetList(ctx context.Context, filter domain.ListTrav
 
 	start := time.Now()
 
-	query := r.db.WithContext(ctx).Preload("Influence").Preload("Job").Preload("Accessory")
+	query := r.db.WithContext(ctx).Preload("Accessory")
 
 	// Apply filters
 	if filter.Name != "" {
