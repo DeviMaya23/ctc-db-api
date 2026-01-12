@@ -7,6 +7,7 @@ import (
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -167,9 +168,24 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		)
 	}
 
+	var releaseDate time.Time
+	if input.ReleaseDate != "" {
+		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
+		if err != nil {
+			s.logger.WithContext(ctx).Error("failed to parse release date",
+				zap.String("release_date", input.ReleaseDate),
+				zap.String("error.type", "parsing_error"),
+				zap.String("error.message", err.Error()),
+			)
+			return err
+		}
+	}
+
 	newTraveller := domain.Traveller{
 		Name:        input.Name,
 		Rarity:      input.Rarity,
+		Banner:      input.Banner,
+		ReleaseDate: releaseDate,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
 		JobID:       constants.GetJobID(input.Job),
 		AccessoryID: accessoryID,
@@ -296,11 +312,26 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 		accessoryID = existingTraveller.AccessoryID
 	}
 
+	var releaseDate time.Time
+	if input.ReleaseDate != "" {
+		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
+		if err != nil {
+			s.logger.WithContext(ctx).Error("failed to parse release date",
+				zap.String("release_date", input.ReleaseDate),
+				zap.String("error.type", "parsing_error"),
+				zap.String("error.message", err.Error()),
+			)
+			return err
+		}
+	}
+
 	// Update traveller
 	updatedTraveller := domain.Traveller{
 		CommonModel: domain.CommonModel{ID: int64(id)},
 		Name:        input.Name,
 		Rarity:      input.Rarity,
+		Banner:      input.Banner,
+		ReleaseDate: releaseDate,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
 		JobID:       constants.GetJobID(input.Job),
 		AccessoryID: accessoryID,

@@ -71,7 +71,19 @@ func (r AccessoryRepository) Update(ctx context.Context, input *domain.Accessory
 		zap.String("accessory.name", input.Name),
 	)
 
-	err = r.db.WithContext(ctx).Updates(input).Error
+	updateData := map[string]interface{}{
+		"name":   input.Name,
+		"hp":     input.HP,
+		"sp":     input.SP,
+		"patk":   input.PAtk,
+		"pdef":   input.PDef,
+		"eatk":   input.EAtk,
+		"edef":   input.EDef,
+		"spd":    input.Spd,
+		"crit":   input.Crit,
+		"effect": input.Effect,
+	}
+	err = r.db.WithContext(ctx).Model(&domain.Accessory{}).Where("id = ?", input.ID).Updates(updateData).Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
