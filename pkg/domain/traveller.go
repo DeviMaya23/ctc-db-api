@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"lizobly/ctc-db-api/pkg/constants"
+	"time"
+)
 
 type Traveller struct {
 	CommonModel
@@ -79,8 +82,8 @@ func ToTravellerListItemResponse(traveller Traveller) TravellerListItemResponse 
 		Rarity:      traveller.Rarity,
 		Banner:      traveller.Banner,
 		ReleaseDate: traveller.ReleaseDate.Format("02-01-2006"),
-		Influence:   traveller.Influence.Name,
-		Job:         traveller.Job.Name,
+		Influence:   constants.GetInfluenceName(traveller.InfluenceID),
+		Job:         constants.GetJobName(traveller.JobID),
 	}
 }
 
@@ -90,8 +93,8 @@ func ToTravellerResponse(traveller Traveller) TravellerResponse {
 		Rarity:      traveller.Rarity,
 		Banner:      traveller.Banner,
 		ReleaseDate: traveller.ReleaseDate.Format("02-01-2006"),
-		Influence:   traveller.Influence.Name,
-		Job:         traveller.Job.Name,
+		Influence:   constants.GetInfluenceName(traveller.InfluenceID),
+		Job:         constants.GetJobName(traveller.JobID),
 		Accessory:   ToAccessoryResponse(traveller.Accessory),
 	}
 }

@@ -36,6 +36,26 @@ func GetInfluenceID(influenceName string) int {
 	return res
 }
 
+var (
+	reverseInfluenceMap = map[int]string{
+		InfluenceWealthID:    InfluenceWealth,
+		InfluencePowerID:     InfluencePower,
+		InfluenceFameID:      InfluenceFame,
+		InfluenceOpulenceID:  InfluenceOpulence,
+		InfluenceDominanceID: InfluenceDominance,
+		InfluencePrestigeID:  InfluencePrestige,
+	}
+)
+
+func GetInfluenceName(influenceID int) string {
+	res, exist := reverseInfluenceMap[influenceID]
+	if !exist {
+		return ""
+	}
+
+	return res
+}
+
 const (
 	JobWarrior    = "Warrior"
 	JobMerchant   = "Merchant"
@@ -73,6 +93,27 @@ func GetJobID(jobName string) int {
 	res, exist := jobMap[jobName]
 	if !exist {
 		return 0
+	}
+	return res
+}
+
+var (
+	reverseJobMap = map[int]string{
+		JobWarriorID:    JobWarrior,
+		JobMerchantID:   JobMerchant,
+		JobThiefID:      JobThief,
+		JobApothecaryID: JobApothecary,
+		JobHunterID:     JobHunter,
+		JobClericID:     JobCleric,
+		JobScholarID:    JobScholar,
+		JobDancerID:     JobDancer,
+	}
+)
+
+func GetJobName(jobID int) string {
+	res, exist := reverseJobMap[jobID]
+	if !exist {
+		return ""
 	}
 	return res
 }
