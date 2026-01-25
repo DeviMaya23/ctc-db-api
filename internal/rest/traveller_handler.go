@@ -13,7 +13,7 @@ import (
 type TravellerService interface {
 	GetByID(ctx context.Context, id int) (res domain.Traveller, err error)
 	GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error)
-	Create(ctx context.Context, input domain.CreateTravellerRequest) (err error)
+	Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error)
 	Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error)
 	Delete(ctx context.Context, id int) (err error)
 }
@@ -139,7 +139,7 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 		return a.ResponseErrorValidation(ctx, err)
 	}
 
-	err = a.Service.Create(ctx.Request().Context(), newTraveller)
+	id, err := a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
 		if domain.IsValidationError(err) || domain.IsConflictError(err) {
 			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
@@ -147,8 +147,8 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 		return a.InternalError(ctx, "error create data", err.Error())
 	}
 
-	// Note: Location header would need the created ID from service
-	return a.Created(ctx, "success", newTraveller, "")
+	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
+	return a.Created(ctx, "success", newTraveller, location)
 }
 
 func (a *TravellerHandler) Update(ctx echo.Context) error {

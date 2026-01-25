@@ -134,7 +134,10 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					traveller := args.Get(1).(*domain.Traveller)
+					traveller.ID = 123
+				}).Return(want.err).Once()
 			},
 		}, {
 			name: "success with accessory",
@@ -152,8 +155,14 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
-				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					accessory := args.Get(1).(*domain.Accessory)
+					accessory.ID = 456
+				}).Return(want.err).Once()
+				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					traveller := args.Get(1).(*domain.Traveller)
+					traveller.ID = 123
+				}).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to create accessory",
@@ -199,13 +208,14 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 				tt.beforeTest(ctx, tt.args, tt.want)
 			}
 
-			err := s.svc.Create(ctx, tt.args.request)
+			id, err := s.svc.Create(ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Equal(s.T(), err, tt.want.err)
 				return
 			}
 
 			assert.Nil(s.T(), err)
+			assert.Greater(s.T(), id, int64(0))
 
 		})
 	}

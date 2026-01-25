@@ -170,7 +170,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 				statusCode: http.StatusCreated,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(nil).Once()
+				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(int64(1), nil).Once()
 			},
 		},
 		{
@@ -198,7 +198,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(gorm.ErrInvalidDB).Once()
+				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(int64(0), gorm.ErrInvalidDB).Once()
 			},
 		},
 	}

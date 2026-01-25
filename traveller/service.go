@@ -119,7 +119,7 @@ func (s Service) GetList(ctx context.Context, filter domain.ListTravellerRequest
 	return
 }
 
-func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (err error) {
+func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Create",
 		attribute.String("traveller.name", input.Name),
 	)
@@ -156,7 +156,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 				zap.String("error.type", "repository_error"),
 				zap.String("error.message", err.Error()),
 			)
-			return
+			return 0, err
 		}
 
 		accessoryID = new(int)
@@ -177,7 +177,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 				zap.String("error.type", "parsing_error"),
 				zap.String("error.message", err.Error()),
 			)
-			return err
+			return 0, err
 		}
 	}
 
@@ -198,7 +198,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 			zap.String("error.type", "repository_error"),
 			zap.String("error.message", err.Error()),
 		)
-		return
+		return 0, err
 	}
 
 	s.logger.WithContext(ctx).Info("traveller created successfully",
@@ -206,7 +206,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		zap.Int64("traveller.id", newTraveller.ID),
 	)
 
-	return
+	return newTraveller.ID, nil
 }
 
 func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error) {
