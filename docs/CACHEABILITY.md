@@ -16,8 +16,8 @@ This API implements RESTful cacheability using ETags and Cache-Control headers.
 - `If-Match` header support for PUT requests (optimistic locking)
 
 ### 2. **Cache-Control Headers**
-- Individual resources: `Cache-Control: private, max-age=300` (5 minutes)
-- List endpoints: `Cache-Control: private, max-age=60` (1 minute)
+- Individual resources: `Cache-Control: public, max-age=600` (10 minutes)
+- List endpoints: `Cache-Control: public, max-age=300` (5 minute)
 
 ### 3. **Last-Modified Headers**
 - Included in GET responses for additional cache validation
@@ -36,7 +36,7 @@ curl -i http://localhost:8080/api/v1/travellers/1
 
 HTTP/1.1 200 OK
 ETag: "1737820800"
-Cache-Control: private, max-age=300
+Cache-Control: public, max-age=600
 Last-Modified: Sat, 25 Jan 2026 12:00:00 GMT
 Content-Type: application/json
 
@@ -115,7 +115,7 @@ response := domain.ToTravellerResponse(traveller)
 // Set cache headers
 etag := response.ETag()
 ctx.Response().Header().Set("ETag", etag)
-ctx.Response().Header().Set("Cache-Control", "private, max-age=300")
+ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
 ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
 
 // Check cache

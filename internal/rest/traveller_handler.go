@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -110,19 +111,18 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
-	response := domain.ToTravellerResponse(traveller)
-
-	// Set caching headers
-	etag := response.ETag()
+	// Generate ETag from domain model
+	etag := fmt.Sprintf(`"%d"`, traveller.UpdatedAt.Unix())
 	ctx.Response().Header().Set("ETag", etag)
 	ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
-	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+	ctx.Response().Header().Set("Last-Modified", traveller.UpdatedAt.UTC().Format(http.TimeFormat))
 
 	// Check if client has cached version
 	if ctx.Request().Header.Get("If-None-Match") == etag {
 		return ctx.NoContent(http.StatusNotModified)
 	}
 
+	response := domain.ToTravellerResponse(traveller)
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -169,8 +169,8 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 			return a.InternalError(ctx, "error get data", err.Error())
 		}
 
-		currentResponse := domain.ToTravellerResponse(currentTraveller)
-		currentETag := currentResponse.ETag()
+		// Generate ETag from domain model
+		currentETag := fmt.Sprintf(`"%d"`, currentTraveller.UpdatedAt.Unix())
 
 		// Prevent lost updates - resource was modified
 		if clientETag != currentETag {
@@ -210,13 +210,12 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		return a.InternalError(ctx, "error get updated data", err.Error())
 	}
 
-	response := domain.ToTravellerResponse(traveller)
-
-	// Set new ETag for updated resource
-	newETag := response.ETag()
+	// Set new ETag for updated resource from domain model
+	newETag := fmt.Sprintf(`"%d"`, traveller.UpdatedAt.Unix())
 	ctx.Response().Header().Set("ETag", newETag)
-	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+	ctx.Response().Header().Set("Last-Modified", traveller.UpdatedAt.UTC().Format(http.TimeFormat))
 
+	response := domain.ToTravellerResponse(traveller)
 	return a.Ok(ctx, "success", response, nil)
 }
 
