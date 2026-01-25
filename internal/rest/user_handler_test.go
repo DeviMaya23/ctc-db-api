@@ -107,7 +107,7 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 					Message: "error",
 					Errors:  domain.ErrInvalidPassword.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusUnauthorized,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.ErrInvalidPassword).Once()
@@ -123,7 +123,7 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 					Message: "error",
 					Errors:  domain.ErrUserNotFound.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusUnauthorized,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.ErrUserNotFound).Once()

@@ -77,6 +77,9 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
+	// Set cache headers for list responses (shorter cache time)
+	ctx.Response().Header().Set("Cache-Control", "private, max-age=60") // 1 minute
+
 	return a.Ok(ctx, "success", result, nil)
 }
 
@@ -108,6 +111,18 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 	}
 
 	response := domain.ToTravellerResponse(traveller)
+
+	// Set caching headers
+	etag := response.ETag()
+	ctx.Response().Header().Set("ETag", etag)
+	ctx.Response().Header().Set("Cache-Control", "private, max-age=300") // 5 minutes
+	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+
+	// Check if client has cached version
+	if ctx.Request().Header.Get("If-None-Match") == etag {
+		return ctx.NoContent(http.StatusNotModified)
+	}
+
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -142,6 +157,29 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
 	}
 
+	// Check for optimistic locking with If-Match header
+	clientETag := ctx.Request().Header.Get("If-Match")
+	if clientETag != "" {
+		// Get current state to verify ETag
+		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+		if err != nil {
+			if domain.IsNotFoundError(err) {
+				return a.NotFound(ctx, err.Error())
+			}
+			return a.InternalError(ctx, "error get data", err.Error())
+		}
+
+		currentResponse := domain.ToTravellerResponse(currentTraveller)
+		currentETag := currentResponse.ETag()
+
+		// Prevent lost updates - resource was modified
+		if clientETag != currentETag {
+			return ctx.JSON(http.StatusPreconditionFailed, map[string]string{
+				"error": "Resource has been modified by another request. Please refresh and try again.",
+			})
+		}
+	}
+
 	var updateRequest domain.UpdateTravellerRequest
 	err = ctx.Bind(&updateRequest)
 	if err != nil {
@@ -173,6 +211,12 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	}
 
 	response := domain.ToTravellerResponse(traveller)
+
+	// Set new ETag for updated resource
+	newETag := response.ETag()
+	ctx.Response().Header().Set("ETag", newETag)
+	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+
 	return a.Ok(ctx, "success", response, nil)
 }
 
