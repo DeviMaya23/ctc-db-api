@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"testing"
@@ -39,6 +40,6 @@ func TestUserRepository_Integration(t *testing.T) {
 
 	// not found
 	user, err = repo.GetByUsername(ctx, "klins")
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError but got: %v", err)
 
 }
