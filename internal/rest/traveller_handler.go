@@ -74,7 +74,7 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 
 	result, err := a.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get data", err.Error())
+		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
 	return a.Ok(ctx, "success", result, nil)
@@ -101,7 +101,10 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
 	response := domain.ToTravellerResponse(traveller)
@@ -123,10 +126,14 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 
 	err = a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
+		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
+		}
+		return a.InternalError(ctx, "error create data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", newTraveller, nil)
+	// Note: Location header would need the created ID from service
+	return a.Created(ctx, "success", newTraveller, "")
 }
 
 func (a *TravellerHandler) Update(ctx echo.Context) error {
@@ -148,12 +155,21 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
+		}
+		return a.InternalError(ctx, "error update data", err.Error())
 	}
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get updated data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error get updated data", err.Error())
 	}
 
 	response := domain.ToTravellerResponse(traveller)
@@ -168,8 +184,11 @@ func (a *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = a.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error delete data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error delete data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", nil, nil)
+	return a.NoContent(ctx)
 }

@@ -35,6 +35,37 @@ func (c Controller) Ok(ctx echo.Context, message string, data, metadata interfac
 	})
 }
 
+// Created returns 201 Created status with Location header
+func (c Controller) Created(ctx echo.Context, message string, data interface{}, location string) error {
+	if location != "" {
+		ctx.Response().Header().Set("Location", location)
+	}
+	return ctx.JSON(http.StatusCreated, StandardAPIResponse{
+		Message: message,
+		Data:    data,
+	})
+}
+
+// NoContent returns 204 No Content status with empty body
+func (c Controller) NoContent(ctx echo.Context) error {
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+// NotFound returns 404 Not Found status
+func (c Controller) NotFound(ctx echo.Context, message string) error {
+	return ctx.JSON(http.StatusNotFound, StandardAPIResponse{
+		Message: message,
+	})
+}
+
+// InternalError returns 500 Internal Server Error status
+func (c Controller) InternalError(ctx echo.Context, message string, errorData interface{}) error {
+	return ctx.JSON(http.StatusInternalServerError, StandardAPIResponse{
+		Message: message,
+		Errors:  errorData,
+	})
+}
+
 func (c Controller) ResponseError(ctx echo.Context, httpStatus int, message string, errorData interface{}) error {
 
 	return ctx.JSON(httpStatus, StandardAPIResponse{
