@@ -69,5 +69,8 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 		return h.InternalError(ctx, "error get data", err.Error())
 	}
 
+	// Set cache headers for list responses
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
+
 	return h.Ok(ctx, "success", result, nil)
 }

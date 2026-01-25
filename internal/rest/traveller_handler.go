@@ -78,7 +78,7 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 	}
 
 	// Set cache headers for list responses (shorter cache time)
-	ctx.Response().Header().Set("Cache-Control", "private, max-age=60") // 1 minute
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
 
 	return a.Ok(ctx, "success", result, nil)
 }
@@ -115,7 +115,7 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 	// Set caching headers
 	etag := response.ETag()
 	ctx.Response().Header().Set("ETag", etag)
-	ctx.Response().Header().Set("Cache-Control", "private, max-age=300") // 5 minutes
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
 	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
 
 	// Check if client has cached version
