@@ -44,10 +44,10 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			r.logger.WithContext(ctx).Warn("traveller not found", logFields...)
-		} else {
-			logFields = append(logFields, logging.ErrorFields(err)...)
-			r.logger.WithContext(ctx).Error("failed to get traveller", logFields...)
+			return result, domain.NewNotFoundError("traveller", id)
 		}
+		logFields = append(logFields, logging.ErrorFields(err)...)
+		r.logger.WithContext(ctx).Error("failed to get traveller", logFields...)
 		return
 	}
 
@@ -159,7 +159,8 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 		zap.String("traveller.name", input.Name),
 	)
 
-	err = r.db.WithContext(ctx).Updates(input).Error
+	result := r.db.WithContext(ctx).Updates(input)
+	err = result.Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
@@ -172,6 +173,12 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to update traveller", logFields...)
 		return
+	}
+
+	// Check if any rows were affected (resource existed)
+	if result.RowsAffected == 0 {
+		r.logger.WithContext(ctx).Warn("traveller not found for update", logFields...)
+		return domain.NewNotFoundError("traveller", input.ID)
 	}
 
 	r.logger.WithContext(ctx).Info("traveller updated successfully", logFields...)
@@ -191,7 +198,8 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 		zap.Int("traveller.id", id),
 	)
 
-	err = r.db.WithContext(ctx).Delete(&domain.Traveller{}, id).Error
+	result := r.db.WithContext(ctx).Delete(&domain.Traveller{}, id)
+	err = result.Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
@@ -204,6 +212,12 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to delete traveller", logFields...)
 		return
+	}
+
+	// Check if any rows were affected (resource existed)
+	if result.RowsAffected == 0 {
+		r.logger.WithContext(ctx).Warn("traveller not found for deletion", logFields...)
+		return domain.NewNotFoundError("traveller", id)
 	}
 
 	r.logger.WithContext(ctx).Info("traveller deleted successfully", logFields...)

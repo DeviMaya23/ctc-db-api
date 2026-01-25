@@ -107,6 +107,6 @@ func TestTravellerRepository_Integration(t *testing.T) {
 		assert.Nil(t, repo.Delete(ctx, int(tr.ID)))
 
 		_, err := repo.GetByID(ctx, int(tr.ID))
-		assert.Equal(t, gorm.ErrRecordNotFound, err)
+		assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError but got: %v", err)
 	})
 }

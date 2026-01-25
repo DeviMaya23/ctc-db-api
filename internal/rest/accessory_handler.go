@@ -66,8 +66,11 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return h.ResponseError(ctx, http.StatusInternalServerError, "error get data", err.Error())
+		return h.InternalError(ctx, "error get data", err.Error())
 	}
+
+	// Set cache headers for list responses
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
 
 	return h.Ok(ctx, "success", result, nil)
 }

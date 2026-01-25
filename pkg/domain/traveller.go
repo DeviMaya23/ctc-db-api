@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"lizobly/ctc-db-api/pkg/constants"
 	"time"
 )
@@ -72,6 +73,7 @@ type TravellerResponse struct {
 	Influence   string             `json:"influence"`
 	Job         string             `json:"job"`
 	Accessory   *AccessoryResponse `json:"accessory,omitempty"`
+	updatedAt   time.Time          `json:"-"` // For ETag generation, not exposed in JSON
 }
 
 // Mapper functions
@@ -96,5 +98,16 @@ func ToTravellerResponse(traveller Traveller) TravellerResponse {
 		Influence:   constants.GetInfluenceName(traveller.InfluenceID),
 		Job:         constants.GetJobName(traveller.JobID),
 		Accessory:   ToAccessoryResponse(traveller.Accessory),
+		updatedAt:   traveller.UpdatedAt,
 	}
+}
+
+// ETag generates an ETag for cache validation based on UpdatedAt timestamp
+func (t TravellerResponse) ETag() string {
+	return fmt.Sprintf(`"%d"`, t.updatedAt.Unix())
+}
+
+// LastModified returns the last modification time for HTTP headers
+func (t TravellerResponse) LastModified() time.Time {
+	return t.updatedAt
 }

@@ -97,17 +97,13 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			name: "failed error get traveller",
 			args: args{"2"},
 			want: want{
-				traveller: traveller,
-				responseBody: StandardAPIResponse{
-					Message: "error get data",
-					Errors:  gorm.ErrRecordNotFound.Error(),
-				},
-				statusCode: http.StatusBadRequest,
+				traveller:  traveller,
+				statusCode: http.StatusNotFound,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				id, err := strconv.Atoi(ctx.Param("id"))
 				assert.Nil(s.T(), err)
-				s.travellerService.On("GetByID", ctx.Request().Context(), id).Return(traveller, gorm.ErrRecordNotFound).Once()
+				s.travellerService.On("GetByID", ctx.Request().Context(), id).Return(traveller, domain.NewNotFoundError("traveller", id)).Once()
 			},
 		},
 	}
@@ -171,7 +167,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 					Message: "success",
 					Data:    req,
 				},
-				statusCode: http.StatusOK,
+				statusCode: http.StatusCreated,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(nil).Once()
@@ -199,7 +195,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 					Message: "error create data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(gorm.ErrInvalidDB).Once()
@@ -307,7 +303,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 					Message: "error update data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(gorm.ErrInvalidDB)
@@ -363,10 +359,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			name: "success delete traveller",
 			args: args{"1"},
 			want: want{
-				responseBody: StandardAPIResponse{
-					Message: "success",
-				},
-				statusCode: http.StatusOK,
+				statusCode: http.StatusNoContent,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Delete", ctx.Request().Context(), 1).Return(nil).Once()
@@ -384,14 +377,14 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			},
 		},
 		{
-			name: "failed update",
+			name: "failed delete",
 			args: args{"1"},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "error delete data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Delete", ctx.Request().Context(), 1).Return(gorm.ErrInvalidDB)
@@ -535,7 +528,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetList() {
 					Message: "error get data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				filter := domain.ListTravellerRequest{}

@@ -74,8 +74,11 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 
 	result, err := a.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get data", err.Error())
+		return a.InternalError(ctx, "error get data", err.Error())
 	}
+
+	// Set cache headers for list responses (shorter cache time)
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
 
 	return a.Ok(ctx, "success", result, nil)
 }
@@ -101,10 +104,25 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
 	response := domain.ToTravellerResponse(traveller)
+
+	// Set caching headers
+	etag := response.ETag()
+	ctx.Response().Header().Set("ETag", etag)
+	ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
+	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+
+	// Check if client has cached version
+	if ctx.Request().Header.Get("If-None-Match") == etag {
+		return ctx.NoContent(http.StatusNotModified)
+	}
+
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -123,16 +141,43 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 
 	err = a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
+		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
+		}
+		return a.InternalError(ctx, "error create data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", newTraveller, nil)
+	// Note: Location header would need the created ID from service
+	return a.Created(ctx, "success", newTraveller, "")
 }
 
 func (a *TravellerHandler) Update(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+	}
+
+	// Check for optimistic locking with If-Match header
+	clientETag := ctx.Request().Header.Get("If-Match")
+	if clientETag != "" {
+		// Get current state to verify ETag
+		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+		if err != nil {
+			if domain.IsNotFoundError(err) {
+				return a.NotFound(ctx, err.Error())
+			}
+			return a.InternalError(ctx, "error get data", err.Error())
+		}
+
+		currentResponse := domain.ToTravellerResponse(currentTraveller)
+		currentETag := currentResponse.ETag()
+
+		// Prevent lost updates - resource was modified
+		if clientETag != currentETag {
+			return ctx.JSON(http.StatusPreconditionFailed, map[string]string{
+				"error": "Resource has been modified by another request. Please refresh and try again.",
+			})
+		}
 	}
 
 	var updateRequest domain.UpdateTravellerRequest
@@ -148,15 +193,30 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
+		}
+		return a.InternalError(ctx, "error update data", err.Error())
 	}
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error get updated data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error get updated data", err.Error())
 	}
 
 	response := domain.ToTravellerResponse(traveller)
+
+	// Set new ETag for updated resource
+	newETag := response.ETag()
+	ctx.Response().Header().Set("ETag", newETag)
+	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
+
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -168,8 +228,11 @@ func (a *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = a.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error delete data", err.Error())
+		if domain.IsNotFoundError(err) {
+			return a.NotFound(ctx, err.Error())
+		}
+		return a.InternalError(ctx, "error delete data", err.Error())
 	}
 
-	return a.Ok(ctx, "success", nil, nil)
+	return a.NoContent(ctx)
 }

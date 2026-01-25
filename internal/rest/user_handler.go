@@ -46,11 +46,11 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidPassword):
-			return h.ResponseError(ctx, http.StatusBadRequest, "error", err.Error())
+			return h.ResponseError(ctx, http.StatusUnauthorized, "error", err.Error())
 		case errors.Is(err, domain.ErrUserNotFound):
-			return h.ResponseError(ctx, http.StatusBadRequest, "error", err.Error())
+			return h.ResponseError(ctx, http.StatusUnauthorized, "error", err.Error())
 		default:
-			return h.ResponseError(ctx, http.StatusInternalServerError, "error", err.Error())
+			return h.InternalError(ctx, "error", err.Error())
 		}
 	}
 

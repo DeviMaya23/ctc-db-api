@@ -75,7 +75,8 @@ func main() {
 	dbUser := os.Getenv("DATABASE_USER")
 	dbPass := os.Getenv("DATABASE_PASS")
 	dbName := os.Getenv("DATABASE_NAME")
-	dsn := fmt.Sprintf("sslmode=disable host=%s port=%s user=%s password='%s' dbname=%s timezone=%s", dbHost, dbPort, dbUser, dbPass, dbName, "Asia/Jakarta")
+	dbSSLMode := helpers.EnvWithDefault("DATABASE_SSLMODE", "disable")
+	dsn := fmt.Sprintf("sslmode=%s host=%s port=%s user=%s password='%s' dbname=%s timezone=%s", dbSSLMode, dbHost, dbPort, dbUser, dbPass, dbName, "Asia/Jakarta")
 
 	dbConn, err := sql.Open("pgx", dsn)
 	if err != nil {
