@@ -80,7 +80,10 @@ func main() {
 
 	dbConn, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Fatal("failed open database ", err)
+		logger.Fatal("Failed to open database connection",
+			zap.Error(err),
+			zap.String("db.host", dbHost),
+			zap.String("db.port", dbPort))
 	}
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: dbConn,
@@ -88,12 +91,16 @@ func main() {
 		TranslateError: true,
 	})
 	if err != nil {
-		log.Fatal("failed to open gorm ", err)
+		logger.Fatal("Failed to initialize GORM",
+			zap.Error(err),
+			zap.String("db.system", "postgres"))
 	}
 
 	err = dbConn.Ping()
 	if err != nil {
-		log.Fatal("failed to ping database ", err)
+		logger.Fatal("Failed to ping database",
+			zap.Error(err),
+			zap.String("db.host", dbHost))
 	}
 
 	logger.Info("database connected",
@@ -102,9 +109,9 @@ func main() {
 	)
 
 	defer func() {
-		err := dbConn.Close()
-		if err != nil {
-			log.Fatal("got error when closing the DB connection", err)
+		if err := dbConn.Close(); err != nil {
+			logger.Error("Failed to close database connection",
+				zap.Error(err))
 		}
 	}()
 

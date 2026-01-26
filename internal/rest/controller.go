@@ -124,6 +124,9 @@ func (c Controller) HandleServiceError(ctx echo.Context, err error, operation st
 	if domain.IsAuthenticationError(err) {
 		return c.ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
 	}
+	if domain.IsInternalError(err) {
+		return c.InternalError(ctx, err.Error(), nil)
+	}
 
 	// Unhandled error - return 500
 	return c.InternalError(ctx, "error "+operation, err.Error())

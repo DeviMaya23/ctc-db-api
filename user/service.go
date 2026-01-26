@@ -71,7 +71,7 @@ func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res do
 	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
 	if jwtSecretKey == "" {
 		s.logger.WithContext(ctx).Error("JWT_SECRET_KEY not configured")
-		err = domain.NewAuthenticationError("authentication configuration error")
+		err = domain.NewInternalError("authentication configuration error")
 		return
 	}
 	jwtTimeoutStr := helpers.EnvWithDefault("JWT_TIMEOUT", "10m")
