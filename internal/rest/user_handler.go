@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"net/http"
 
@@ -44,14 +43,7 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 
 	res, err := h.Service.Login(ctx.Request().Context(), request)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidPassword):
-			return h.ResponseError(ctx, http.StatusUnauthorized, "error", err.Error())
-		case errors.Is(err, domain.ErrUserNotFound):
-			return h.ResponseError(ctx, http.StatusUnauthorized, "error", err.Error())
-		default:
-			return h.InternalError(ctx, "error", err.Error())
-		}
+		return h.HandleServiceError(ctx, err, "login")
 	}
 
 	return h.Ok(ctx, "success", res, nil)

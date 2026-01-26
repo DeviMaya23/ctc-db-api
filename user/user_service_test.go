@@ -26,12 +26,15 @@ func TestUserServiceSuite(t *testing.T) {
 	suite.Run(t, new(UserServiceSuite))
 }
 
-func (s *UserServiceSuite) SetupSuite() {
+func (s *UserServiceSuite) SetupTest() {
 	logger, _ := logging.NewDevelopmentLogger()
 
 	s.userRepo = new(mocks.MockUserRepository)
 	s.svc = NewUserService(s.userRepo, logger)
+}
 
+func (s *UserServiceSuite) TearDownTest() {
+	s.userRepo.AssertExpectations(s.T())
 }
 
 func (s *UserServiceSuite) TestUserService_NewService() {
@@ -84,9 +87,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			args: args{request: domain.LoginRequest{
 				Username: "isla",
 			}},
-			want: want{
-				err: domain.ErrUserNotFound,
-			},
+			want:    want{},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, gorm.ErrRecordNotFound).Once()
@@ -98,9 +99,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			args: args{request: domain.LoginRequest{
 				Username: "isla",
 			}},
-			want: want{
-				err: domain.ErrInvalidPassword,
-			},
+			want:    want{},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, nil).Once()
@@ -119,7 +118,8 @@ func (s *UserServiceSuite) TestUserService_Login() {
 
 			got, err := s.svc.Login(ctx, tt.args.request)
 			if tt.wantErr {
-				assert.Equal(s.T(), err, tt.want.err)
+				assert.Error(s.T(), err)
+				assert.True(s.T(), domain.IsAuthenticationError(err), "expected AuthenticationError")
 				return
 			}
 

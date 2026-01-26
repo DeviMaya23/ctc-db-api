@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -31,11 +32,14 @@ func TestTravellerHandlerSuite(t *testing.T) {
 	suite.Run(t, new(TravellerHandlerSuite))
 }
 
-func (s *TravellerHandlerSuite) SetupSuite() {
+func (s *TravellerHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.travellerService = new(mocks.MockTravellerService)
 	s.handler = NewTravellerHandler(s.e.Group(""), s.travellerService)
+}
 
+func (s *TravellerHandlerSuite) TearDownTest() {
+	s.travellerService.AssertExpectations(s.T())
 }
 
 func (s *TravellerHandlerSuite) TestTravellerHandler_NewHandler() {
@@ -153,6 +157,16 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 		Job:       "Warrior",
 	}
 
+	createdTraveller := domain.Traveller{
+		CommonModel: domain.CommonModel{ID: 1},
+		Name:        "Fiore",
+		Rarity:      5,
+		InfluenceID: constants.GetInfluenceID("Fame"),
+		Influence:   domain.Influence{Name: "Fame"},
+		JobID:       constants.GetJobID("Warrior"),
+		Job:         domain.Job{Name: "Warrior"},
+	}
+
 	tests := []struct {
 		name       string
 		args       args
@@ -165,12 +179,13 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "success",
-					Data:    req,
+					Data:    domain.ToTravellerResponse(createdTraveller),
 				},
 				statusCode: http.StatusCreated,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(nil).Once()
+				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(int64(1), nil).Once()
+				s.travellerService.On("GetByID", ctx.Request().Context(), 1).Return(createdTraveller, nil).Once()
 			},
 		},
 		{
@@ -198,7 +213,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(gorm.ErrInvalidDB).Once()
+				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(int64(0), gorm.ErrInvalidDB).Once()
 			},
 		},
 	}
@@ -233,6 +248,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 	type args struct {
 		pathID      string
 		requestBody interface{}
+		headers     map[string]string
 	}
 	type want struct {
 		responseBody interface{}
@@ -264,7 +280,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 	}{
 		{
 			name: "success update traveller",
-			args: args{"1", updateRequest},
+			args: args{"1", updateRequest, nil},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "success",
@@ -278,8 +294,22 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			},
 		},
 		{
+			name: "failed precondition - ETag mismatch",
+			args: args{"1", updateRequest, map[string]string{"If-Match": `"9999999999"`}},
+			want: want{
+				statusCode: http.StatusPreconditionFailed,
+			},
+			beforeTest: func(ctx echo.Context, param args, want want) {
+				currentTraveller := updatedTraveller
+				// Unix timestamp 1704067230 (different from If-Match 9999999999)
+				t, _ := time.Parse(time.RFC3339, "2024-01-01T00:20:30Z")
+				currentTraveller.UpdatedAt = t
+				s.travellerService.On("GetByID", ctx.Request().Context(), 1).Return(currentTraveller, nil).Once()
+			},
+		},
+		{
 			name: "failed invalid id",
-			args: args{"", domain.UpdateTravellerRequest{}},
+			args: args{"", domain.UpdateTravellerRequest{}, nil},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "error validation",
@@ -290,14 +320,14 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		},
 		{
 			name: "failed bind request body",
-			args: args{"1", `asdf`},
+			args: args{"1", `asdf`, nil},
 			want: want{
 				statusCode: http.StatusBadRequest,
 			},
 		},
 		{
 			name: "failed update",
-			args: args{"1", updateRequest},
+			args: args{"1", updateRequest, nil},
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "error update data",
@@ -306,7 +336,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 				statusCode: http.StatusInternalServerError,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(gorm.ErrInvalidDB)
+				s.travellerService.On("Update", ctx.Request().Context(), 1, updateRequest).Return(gorm.ErrInvalidDB).Once()
 			},
 		},
 	}
@@ -316,6 +346,13 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 
 			pathParam := map[string]string{"id": tt.args.pathID}
 			rec, ctx := helpers.GetHTTPTestRecorder(s.T(), http.MethodPut, "/travellers/1", tt.args.requestBody, nil, pathParam)
+
+			// Set headers if provided
+			if tt.args.headers != nil {
+				for key, value := range tt.args.headers {
+					ctx.Request().Header.Set(key, value)
+				}
+			}
 
 			if tt.beforeTest != nil {
 				tt.beforeTest(ctx, tt.args, tt.want)

@@ -40,20 +40,29 @@ func (_m *MockTravellerService) EXPECT() *MockTravellerService_Expecter {
 }
 
 // Create provides a mock function for the type MockTravellerService
-func (_mock *MockTravellerService) Create(ctx context.Context, input domain.CreateTravellerRequest) error {
+func (_mock *MockTravellerService) Create(ctx context.Context, input domain.CreateTravellerRequest) (int64, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.CreateTravellerRequest) error); ok {
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.CreateTravellerRequest) (int64, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.CreateTravellerRequest) int64); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(int64)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.CreateTravellerRequest) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockTravellerService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -86,12 +95,12 @@ func (_c *MockTravellerService_Create_Call) Run(run func(ctx context.Context, in
 	return _c
 }
 
-func (_c *MockTravellerService_Create_Call) Return(err error) *MockTravellerService_Create_Call {
-	_c.Call.Return(err)
+func (_c *MockTravellerService_Create_Call) Return(id int64, err error) *MockTravellerService_Create_Call {
+	_c.Call.Return(id, err)
 	return _c
 }
 
-func (_c *MockTravellerService_Create_Call) RunAndReturn(run func(ctx context.Context, input domain.CreateTravellerRequest) error) *MockTravellerService_Create_Call {
+func (_c *MockTravellerService_Create_Call) RunAndReturn(run func(ctx context.Context, input domain.CreateTravellerRequest) (int64, error)) *MockTravellerService_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

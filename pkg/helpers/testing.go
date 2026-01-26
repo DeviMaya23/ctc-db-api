@@ -28,7 +28,9 @@ func NewMockDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: sqlDB,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		return nil, nil, err
 	}

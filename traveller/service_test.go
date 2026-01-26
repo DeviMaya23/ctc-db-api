@@ -18,7 +18,6 @@ import (
 type TravellerServiceSuite struct {
 	suite.Suite
 	travellerRepo *mocks.MockTravellerRepository
-	accessoryRepo *mocks.MockAccessoryRepository
 	svc           *Service
 }
 
@@ -26,13 +25,15 @@ func TestTravellerServiceSuite(t *testing.T) {
 	suite.Run(t, new(TravellerServiceSuite))
 }
 
-func (s *TravellerServiceSuite) SetupSuite() {
+func (s *TravellerServiceSuite) SetupTest() {
 	logger, _ := logging.NewDevelopmentLogger()
 
 	s.travellerRepo = new(mocks.MockTravellerRepository)
-	s.accessoryRepo = new(mocks.MockAccessoryRepository)
-	s.svc = NewTravellerService(s.travellerRepo, s.accessoryRepo, logger)
+	s.svc = NewTravellerService(s.travellerRepo, logger)
+}
 
+func (s *TravellerServiceSuite) TearDownTest() {
+	s.travellerRepo.AssertExpectations(s.T())
 }
 
 func (s *TravellerServiceSuite) TestTravellerService_NewService() {
@@ -40,8 +41,7 @@ func (s *TravellerServiceSuite) TestTravellerService_NewService() {
 	s.T().Run("success", func(t *testing.T) {
 		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockTravellerRepository)
-		accessoryRepo := new(mocks.MockAccessoryRepository)
-		NewTravellerService(repo, accessoryRepo, logger)
+		NewTravellerService(repo, logger)
 	})
 }
 
@@ -134,7 +134,10 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("CreateTravellerWithAccessory", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					traveller := args.Get(1).(*domain.Traveller)
+					traveller.ID = 123
+				}).Return(want.err).Once()
 			},
 		}, {
 			name: "success with accessory",
@@ -152,8 +155,12 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
-				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("CreateTravellerWithAccessory", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+					traveller := args.Get(1).(*domain.Traveller)
+					accessory := args.Get(2).(*domain.Accessory)
+					traveller.ID = 123
+					accessory.ID = 456
+				}).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to create accessory",
@@ -171,7 +178,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("CreateTravellerWithAccessory", mock.Anything, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to create traveller",
@@ -186,7 +193,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("CreateTravellerWithAccessory", mock.Anything, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		},
 	}
@@ -199,13 +206,14 @@ func (s *TravellerServiceSuite) TestTravellerService_Create() {
 				tt.beforeTest(ctx, tt.args, tt.want)
 			}
 
-			err := s.svc.Create(ctx, tt.args.request)
+			id, err := s.svc.Create(ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Equal(s.T(), err, tt.want.err)
 				return
 			}
 
 			assert.Nil(s.T(), err)
+			assert.Greater(s.T(), id, int64(0))
 
 		})
 	}
@@ -242,16 +250,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				// Mock GetByID to return existing traveller without accessory
-				existingTraveller := domain.Traveller{
-					CommonModel: domain.CommonModel{ID: int64(args.id)},
-					Name:        "Fiore",
-					Rarity:      5,
-					InfluenceID: 1,
-					AccessoryID: nil,
-				}
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
-				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "success with new accessory creation",
@@ -273,17 +272,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				// Mock GetByID to return existing traveller without accessory
-				existingTraveller := domain.Traveller{
-					CommonModel: domain.CommonModel{ID: int64(args.id)},
-					Name:        "Fiore",
-					Rarity:      5,
-					InfluenceID: 1,
-					AccessoryID: nil,
-				}
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
-				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
-				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "success with existing accessory update",
@@ -305,18 +294,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				// Mock GetByID to return existing traveller with accessory
-				accessoryID := 42
-				existingTraveller := domain.Traveller{
-					CommonModel: domain.CommonModel{ID: int64(args.id)},
-					Name:        "Fiore",
-					Rarity:      5,
-					InfluenceID: 1,
-					AccessoryID: &accessoryID,
-				}
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
-				s.accessoryRepo.On("Update", mock.Anything, mock.Anything).Return(nil).Once()
-				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to get existing traveller",
@@ -334,7 +312,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{err: gorm.ErrRecordNotFound},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(domain.Traveller{}, want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to create accessory",
@@ -355,13 +333,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				existingTraveller := domain.Traveller{
-					CommonModel: domain.CommonModel{ID: int64(args.id)},
-					Name:        "Fiore",
-					AccessoryID: nil,
-				}
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
-				s.accessoryRepo.On("Create", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		}, {
 			name: "failed to update traveller",
@@ -379,13 +351,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 			want:    want{err: gorm.ErrInvalidDB},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				existingTraveller := domain.Traveller{
-					CommonModel: domain.CommonModel{ID: int64(args.id)},
-					Name:        "Fiore",
-					AccessoryID: nil,
-				}
-				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(existingTraveller, nil).Once()
-				s.travellerRepo.On("Update", mock.Anything, mock.Anything).Return(want.err).Once()
+				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
 			},
 		},
 	}

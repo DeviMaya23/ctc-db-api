@@ -31,25 +31,82 @@ type MockAccessoryService struct {
 	mock.Mock
 }
 
-// GetList provides a mock function with given fields: ctx, filter, params
-func (_m *MockAccessoryService) GetList(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams) (helpers.PaginatedResponse[domain.AccessoryListItemResponse], error) {
-	ret := _m.Called(ctx, filter, params)
+type MockAccessoryService_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockAccessoryService) EXPECT() *MockAccessoryService_Expecter {
+	return &MockAccessoryService_Expecter{mock: &_m.Mock}
+}
+
+// GetList provides a mock function for the type MockAccessoryService
+func (_mock *MockAccessoryService) GetList(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams) (helpers.PaginatedResponse[domain.AccessoryListItemResponse], error) {
+	ret := _mock.Called(ctx, filter, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetList")
+	}
+
 	var r0 helpers.PaginatedResponse[domain.AccessoryListItemResponse]
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) (helpers.PaginatedResponse[domain.AccessoryListItemResponse], error)); ok {
-		return rf(ctx, filter, params)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) (helpers.PaginatedResponse[domain.AccessoryListItemResponse], error)); ok {
+		return returnFunc(ctx, filter, params)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) helpers.PaginatedResponse[domain.AccessoryListItemResponse]); ok {
-		r0 = rf(ctx, filter, params)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) helpers.PaginatedResponse[domain.AccessoryListItemResponse]); ok {
+		r0 = returnFunc(ctx, filter, params)
 	} else {
 		r0 = ret.Get(0).(helpers.PaginatedResponse[domain.AccessoryListItemResponse])
 	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) error); ok {
-		r1 = rf(ctx, filter, params)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ListAccessoryRequest, helpers.PaginationParams) error); ok {
+		r1 = returnFunc(ctx, filter, params)
 	} else {
 		r1 = ret.Error(1)
 	}
-
 	return r0, r1
+}
+
+// MockAccessoryService_GetList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetList'
+type MockAccessoryService_GetList_Call struct {
+	*mock.Call
+}
+
+// GetList is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filter domain.ListAccessoryRequest
+//   - params helpers.PaginationParams
+func (_e *MockAccessoryService_Expecter) GetList(ctx interface{}, filter interface{}, params interface{}) *MockAccessoryService_GetList_Call {
+	return &MockAccessoryService_GetList_Call{Call: _e.mock.On("GetList", ctx, filter, params)}
+}
+
+func (_c *MockAccessoryService_GetList_Call) Run(run func(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams)) *MockAccessoryService_GetList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.ListAccessoryRequest
+		if args[1] != nil {
+			arg1 = args[1].(domain.ListAccessoryRequest)
+		}
+		var arg2 helpers.PaginationParams
+		if args[2] != nil {
+			arg2 = args[2].(helpers.PaginationParams)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAccessoryService_GetList_Call) Return(res helpers.PaginatedResponse[domain.AccessoryListItemResponse], err error) *MockAccessoryService_GetList_Call {
+	_c.Call.Return(res, err)
+	return _c
+}
+
+func (_c *MockAccessoryService_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams) (helpers.PaginatedResponse[domain.AccessoryListItemResponse], error)) *MockAccessoryService_GetList_Call {
+	_c.Call.Return(run)
+	return _c
 }

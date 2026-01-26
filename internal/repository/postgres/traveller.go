@@ -134,6 +134,11 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	)
 
 	if err != nil {
+		// Check for duplicate key violation
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists")
+		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to create traveller", logFields...)
 		return
@@ -170,6 +175,11 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	)
 
 	if err != nil {
+		// Check for duplicate key violation
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists")
+		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to update traveller", logFields...)
 		return
@@ -221,6 +231,230 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 	}
 
 	r.logger.WithContext(ctx).Info("traveller deleted successfully", logFields...)
+
+	return
+}
+
+// CreateTravellerWithAccessory creates a traveller and optionally an accessory in a single transaction
+func (r TravellerRepository) CreateTravellerWithAccessory(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.CreateTravellerWithAccessory", "transaction", "m_traveller",
+		attribute.String("traveller.name", traveller.Name),
+		attribute.Bool("has_accessory", accessory != nil),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
+	start := time.Now()
+
+	r.logger.WithContext(ctx).Info("creating traveller with accessory in transaction",
+		zap.String("traveller.name", traveller.Name),
+		zap.Bool("has_accessory", accessory != nil),
+	)
+
+	// Start transaction
+	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Create accessory first if provided
+		if accessory != nil {
+			r.logger.WithContext(ctx).Info("creating accessory in transaction",
+				zap.String("accessory.name", accessory.Name),
+			)
+
+			if err := tx.Create(accessory).Error; err != nil {
+				r.logger.WithContext(ctx).Error("failed to create accessory in transaction",
+					zap.String("accessory.name", accessory.Name),
+					zap.Error(err),
+				)
+				return err
+			}
+
+			// Set accessory ID on traveller
+			accessoryIDInt := int(accessory.ID)
+			traveller.AccessoryID = &accessoryIDInt
+
+			r.logger.WithContext(ctx).Info("accessory created in transaction",
+				zap.Int64("accessory.id", accessory.ID),
+			)
+		}
+
+		// Create traveller
+		if err := tx.Create(traveller).Error; err != nil {
+			// Check for duplicate key violation
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				r.logger.WithContext(ctx).Warn("duplicate traveller name",
+					zap.String("traveller.name", traveller.Name),
+					zap.Error(err),
+				)
+				return domain.NewConflictError("traveller with this name already exists")
+			}
+			r.logger.WithContext(ctx).Error("failed to create traveller in transaction",
+				zap.String("traveller.name", traveller.Name),
+				zap.Error(err),
+			)
+			return err
+		}
+
+		r.logger.WithContext(ctx).Info("traveller created in transaction",
+			zap.Int64("traveller.id", traveller.ID),
+		)
+
+		return nil
+	})
+
+	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
+	logFields := append(
+		logging.DatabaseFields("transaction", "m_traveller", duration),
+		zap.String("traveller.name", traveller.Name),
+	)
+
+	if err != nil {
+		logFields = append(logFields, logging.ErrorFields(err)...)
+		r.logger.WithContext(ctx).Error("transaction failed", logFields...)
+		return
+	}
+
+	r.logger.WithContext(ctx).Info("traveller with accessory created successfully",
+		append(logFields, zap.Int64("traveller.id", traveller.ID))...)
+
+	return
+}
+
+// UpdateTravellerWithAccessory updates a traveller and handles accessory create/update in a single transaction
+func (r TravellerRepository) UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
+	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.UpdateTravellerWithAccessory", "transaction", "m_traveller",
+		attribute.Int("traveller.id", id),
+		attribute.String("traveller.name", traveller.Name),
+		attribute.Bool("has_accessory", accessory != nil),
+	)
+	defer telemetry.EndSpanWithError(span, err)
+
+	start := time.Now()
+
+	r.logger.WithContext(ctx).Info("updating traveller with accessory in transaction",
+		zap.Int("traveller.id", id),
+		zap.String("traveller.name", traveller.Name),
+		zap.Bool("has_accessory", accessory != nil),
+	)
+
+	// Start transaction
+	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// First, fetch existing traveller to check if it has an accessory
+		var existingTraveller domain.Traveller
+		if err := tx.Select("id", "accessory_id").First(&existingTraveller, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				r.logger.WithContext(ctx).Warn("traveller not found for update",
+					zap.Int("traveller.id", id),
+				)
+				return domain.NewNotFoundError("traveller", id)
+			}
+			r.logger.WithContext(ctx).Error("failed to fetch existing traveller",
+				zap.Int("traveller.id", id),
+				zap.Error(err),
+			)
+			return err
+		}
+
+		// Handle accessory if provided
+		if accessory != nil {
+			if existingTraveller.AccessoryID != nil {
+				// Update existing accessory
+				accessory.ID = int64(*existingTraveller.AccessoryID)
+
+				r.logger.WithContext(ctx).Info("updating existing accessory in transaction",
+					zap.Int64("accessory.id", accessory.ID),
+					zap.String("accessory.name", accessory.Name),
+				)
+
+				updateData := map[string]interface{}{
+					"name":   accessory.Name,
+					"hp":     accessory.HP,
+					"sp":     accessory.SP,
+					"patk":   accessory.PAtk,
+					"pdef":   accessory.PDef,
+					"eatk":   accessory.EAtk,
+					"edef":   accessory.EDef,
+					"spd":    accessory.Spd,
+					"crit":   accessory.Crit,
+					"effect": accessory.Effect,
+				}
+				if err := tx.Model(&domain.Accessory{}).Where("id = ?", accessory.ID).Updates(updateData).Error; err != nil {
+					r.logger.WithContext(ctx).Error("failed to update accessory in transaction",
+						zap.Int64("accessory.id", accessory.ID),
+						zap.Error(err),
+					)
+					return err
+				}
+
+				traveller.AccessoryID = existingTraveller.AccessoryID
+
+				r.logger.WithContext(ctx).Info("accessory updated in transaction",
+					zap.Int64("accessory.id", accessory.ID),
+				)
+			} else {
+				// Create new accessory
+				r.logger.WithContext(ctx).Info("creating new accessory in transaction",
+					zap.String("accessory.name", accessory.Name),
+				)
+
+				if err := tx.Create(accessory).Error; err != nil {
+					r.logger.WithContext(ctx).Error("failed to create accessory in transaction",
+						zap.String("accessory.name", accessory.Name),
+						zap.Error(err),
+					)
+					return err
+				}
+
+				// Set new accessory ID on traveller
+				accessoryIDInt := int(accessory.ID)
+				traveller.AccessoryID = &accessoryIDInt
+
+				r.logger.WithContext(ctx).Info("new accessory created in transaction",
+					zap.Int64("accessory.id", accessory.ID),
+				)
+			}
+		} else {
+			// Keep existing accessory ID (no change to accessory)
+			traveller.AccessoryID = existingTraveller.AccessoryID
+		}
+
+		// Update traveller
+		result := tx.Updates(traveller)
+		if err := result.Error; err != nil {
+			// Check for duplicate key violation
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				r.logger.WithContext(ctx).Warn("duplicate traveller name",
+					zap.String("traveller.name", traveller.Name),
+					zap.Error(err),
+				)
+				return domain.NewConflictError("traveller with this name already exists")
+			}
+			r.logger.WithContext(ctx).Error("failed to update traveller in transaction",
+				zap.Int("traveller.id", id),
+				zap.Error(err),
+			)
+			return err
+		}
+
+		r.logger.WithContext(ctx).Info("traveller updated in transaction",
+			zap.Int("traveller.id", id),
+		)
+
+		return nil
+	})
+
+	duration := time.Since(start)
+	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
+	logFields := append(
+		logging.DatabaseFields("transaction", "m_traveller", duration),
+		zap.Int("traveller.id", id),
+	)
+
+	if err != nil {
+		logFields = append(logFields, logging.ErrorFields(err)...)
+		r.logger.WithContext(ctx).Error("transaction failed", logFields...)
+		return
+	}
+
+	r.logger.WithContext(ctx).Info("traveller with accessory updated successfully", logFields...)
 
 	return
 }

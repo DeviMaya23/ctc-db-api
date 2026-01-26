@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 type TravellerService interface {
 	GetByID(ctx context.Context, id int) (res domain.Traveller, err error)
 	GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error)
-	Create(ctx context.Context, input domain.CreateTravellerRequest) (err error)
+	Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error)
 	Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error)
 	Delete(ctx context.Context, id int) (err error)
 }
@@ -77,8 +78,8 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
-	// Set cache headers for list responses (shorter cache time)
-	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
+	// Set cache headers for list responses
+	helpers.SetListCacheHeaders(ctx)
 
 	return a.Ok(ctx, "success", result, nil)
 }
@@ -104,25 +105,15 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error get data", err.Error())
+		return a.HandleServiceError(ctx, err, "get data")
+	}
+
+	// Set cache headers and check if client has valid cached version
+	if helpers.SetCacheHeaders(ctx, traveller.ETag(), traveller.LastModified(), constants.CacheMaxAgeResource) {
+		return helpers.RespondNotModified(ctx)
 	}
 
 	response := domain.ToTravellerResponse(traveller)
-
-	// Set caching headers
-	etag := response.ETag()
-	ctx.Response().Header().Set("ETag", etag)
-	ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
-	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
-
-	// Check if client has cached version
-	if ctx.Request().Header.Get("If-None-Match") == etag {
-		return ctx.NoContent(http.StatusNotModified)
-	}
-
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -139,16 +130,23 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 		return a.ResponseErrorValidation(ctx, err)
 	}
 
-	err = a.Service.Create(ctx.Request().Context(), newTraveller)
+	id, err := a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		if domain.IsValidationError(err) || domain.IsConflictError(err) {
-			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
-		}
-		return a.InternalError(ctx, "error create data", err.Error())
+		return a.HandleServiceError(ctx, err, "create data")
 	}
 
-	// Note: Location header would need the created ID from service
-	return a.Created(ctx, "success", newTraveller, "")
+	traveller, err := a.Service.GetByID(ctx.Request().Context(), int(id))
+	if err != nil {
+		return a.HandleServiceError(ctx, err, "get created data")
+	}
+
+	// Set ETag and Last-Modified for created resource
+	ctx.Response().Header().Set("ETag", traveller.ETag())
+	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
+
+	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
+	response := domain.ToTravellerResponse(traveller)
+	return a.Created(ctx, "success", response, location)
 }
 
 func (a *TravellerHandler) Update(ctx echo.Context) error {
@@ -158,25 +156,16 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	}
 
 	// Check for optimistic locking with If-Match header
-	clientETag := ctx.Request().Header.Get("If-Match")
-	if clientETag != "" {
+	if ctx.Request().Header.Get("If-Match") != "" {
 		// Get current state to verify ETag
 		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
-			if domain.IsNotFoundError(err) {
-				return a.NotFound(ctx, err.Error())
-			}
-			return a.InternalError(ctx, "error get data", err.Error())
+			return a.HandleServiceError(ctx, err, "get data")
 		}
 
-		currentResponse := domain.ToTravellerResponse(currentTraveller)
-		currentETag := currentResponse.ETag()
-
 		// Prevent lost updates - resource was modified
-		if clientETag != currentETag {
-			return ctx.JSON(http.StatusPreconditionFailed, map[string]string{
-				"error": "Resource has been modified by another request. Please refresh and try again.",
-			})
+		if !helpers.CheckETagMatch(ctx, currentTraveller.ETag()) {
+			return helpers.RespondPreconditionFailed(ctx)
 		}
 	}
 
@@ -193,30 +182,19 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		if domain.IsValidationError(err) || domain.IsConflictError(err) {
-			return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
-		}
-		return a.InternalError(ctx, "error update data", err.Error())
+		return a.HandleServiceError(ctx, err, "update data")
 	}
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error get updated data", err.Error())
+		return a.HandleServiceError(ctx, err, "get updated data")
 	}
 
+	// Set new ETag and Last-Modified for updated resource
+	ctx.Response().Header().Set("ETag", traveller.ETag())
+	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
+
 	response := domain.ToTravellerResponse(traveller)
-
-	// Set new ETag for updated resource
-	newETag := response.ETag()
-	ctx.Response().Header().Set("ETag", newETag)
-	ctx.Response().Header().Set("Last-Modified", response.LastModified().UTC().Format(http.TimeFormat))
-
 	return a.Ok(ctx, "success", response, nil)
 }
 
@@ -228,10 +206,7 @@ func (a *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = a.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error delete data", err.Error())
+		return a.HandleServiceError(ctx, err, "delete data")
 	}
 
 	return a.NoContent(ctx)

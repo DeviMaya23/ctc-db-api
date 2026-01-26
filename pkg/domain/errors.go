@@ -5,12 +5,6 @@ import (
 	"fmt"
 )
 
-// Domain-specific errors for proper REST status code mapping
-var (
-	ErrInvalidPassword = errors.New("invalid password")
-	ErrUserNotFound    = errors.New("failed get user info")
-)
-
 // NotFoundError represents a resource not found error (404)
 type NotFoundError struct {
 	Resource string
@@ -74,4 +68,24 @@ func NewConflictError(message string) error {
 func IsConflictError(err error) bool {
 	var conflictErr *ConflictError
 	return errors.As(err, &conflictErr)
+}
+
+// AuthenticationError represents invalid credentials (401)
+type AuthenticationError struct {
+	Message string
+}
+
+func (e *AuthenticationError) Error() string {
+	return e.Message
+}
+
+// NewAuthenticationError creates a new AuthenticationError
+func NewAuthenticationError(message string) error {
+	return &AuthenticationError{Message: message}
+}
+
+// IsAuthenticationError checks if an error is an AuthenticationError
+func IsAuthenticationError(err error) bool {
+	var authErr *AuthenticationError
+	return errors.As(err, &authErr)
 }

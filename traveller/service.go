@@ -19,23 +19,18 @@ type TravellerRepository interface {
 	Create(ctx context.Context, input *domain.Traveller) (err error)
 	Update(ctx context.Context, input *domain.Traveller) (err error)
 	Delete(ctx context.Context, id int) (err error)
-}
-
-type AccessoryRepository interface {
-	Create(ctx context.Context, input *domain.Accessory) (err error)
-	Update(ctx context.Context, input *domain.Accessory) (err error)
+	CreateTravellerWithAccessory(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) (err error)
+	UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) (err error)
 }
 
 type Service struct {
 	travellerRepo TravellerRepository
-	accessoryRepo AccessoryRepository
 	logger        *logging.Logger
 }
 
-func NewTravellerService(t TravellerRepository, a AccessoryRepository, logger *logging.Logger) *Service {
+func NewTravellerService(t TravellerRepository, logger *logging.Logger) *Service {
 	return &Service{
 		travellerRepo: t,
-		accessoryRepo: a,
 		logger:        logger.Named("service.traveller"),
 	}
 }
@@ -119,7 +114,7 @@ func (s Service) GetList(ctx context.Context, filter domain.ListTravellerRequest
 	return
 }
 
-func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (err error) {
+func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Create",
 		attribute.String("traveller.name", input.Name),
 	)
@@ -129,14 +124,34 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		zap.String("traveller.name", input.Name),
 	)
 
-	// Create accessory if provided
-	var accessoryID *int
-	if input.Accessory != nil {
-		s.logger.WithContext(ctx).Info("creating accessory for traveller",
-			zap.String("accessory.name", input.Accessory.Name),
-		)
+	// Parse release date
+	var releaseDate time.Time
+	if input.ReleaseDate != "" {
+		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
+		if err != nil {
+			s.logger.WithContext(ctx).Error("failed to parse release date",
+				zap.String("release_date", input.ReleaseDate),
+				zap.String("error.type", "parsing_error"),
+				zap.String("error.message", err.Error()),
+			)
+			return 0, err
+		}
+	}
 
-		newAccessory := domain.Accessory{
+	// Build traveller domain object
+	newTraveller := domain.Traveller{
+		Name:        input.Name,
+		Rarity:      input.Rarity,
+		Banner:      input.Banner,
+		ReleaseDate: releaseDate,
+		InfluenceID: constants.GetInfluenceID(input.Influence),
+		JobID:       constants.GetJobID(input.Job),
+	}
+
+	// Build accessory domain object if provided
+	var newAccessory *domain.Accessory
+	if input.Accessory != nil {
+		newAccessory = &domain.Accessory{
 			Name:   input.Accessory.Name,
 			HP:     input.Accessory.HP,
 			SP:     input.Accessory.SP,
@@ -148,57 +163,17 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 			Crit:   input.Accessory.Crit,
 			Effect: input.Accessory.Effect,
 		}
-
-		err = s.accessoryRepo.Create(ctx, &newAccessory)
-		if err != nil {
-			s.logger.WithContext(ctx).Error("failed to create accessory",
-				zap.String("accessory.name", input.Accessory.Name),
-				zap.String("error.type", "repository_error"),
-				zap.String("error.message", err.Error()),
-			)
-			return
-		}
-
-		accessoryID = new(int)
-		*accessoryID = int(newAccessory.ID)
-
-		s.logger.WithContext(ctx).Info("accessory created successfully",
-			zap.String("accessory.name", input.Accessory.Name),
-			zap.Int64("accessory.id", newAccessory.ID),
-		)
 	}
 
-	var releaseDate time.Time
-	if input.ReleaseDate != "" {
-		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
-		if err != nil {
-			s.logger.WithContext(ctx).Error("failed to parse release date",
-				zap.String("release_date", input.ReleaseDate),
-				zap.String("error.type", "parsing_error"),
-				zap.String("error.message", err.Error()),
-			)
-			return err
-		}
-	}
-
-	newTraveller := domain.Traveller{
-		Name:        input.Name,
-		Rarity:      input.Rarity,
-		Banner:      input.Banner,
-		ReleaseDate: releaseDate,
-		InfluenceID: constants.GetInfluenceID(input.Influence),
-		JobID:       constants.GetJobID(input.Job),
-		AccessoryID: accessoryID,
-	}
-
-	err = s.travellerRepo.Create(ctx, &newTraveller)
+	// Create traveller with accessory in transaction
+	err = s.travellerRepo.CreateTravellerWithAccessory(ctx, &newTraveller, newAccessory)
 	if err != nil {
 		s.logger.WithContext(ctx).Error("failed to create traveller",
 			zap.String("traveller.name", input.Name),
 			zap.String("error.type", "repository_error"),
 			zap.String("error.message", err.Error()),
 		)
-		return
+		return 0, err
 	}
 
 	s.logger.WithContext(ctx).Info("traveller created successfully",
@@ -206,7 +181,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 		zap.Int64("traveller.id", newTraveller.ID),
 	)
 
-	return
+	return newTraveller.ID, nil
 }
 
 func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error) {
@@ -221,97 +196,7 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 		zap.String("traveller.name", input.Name),
 	)
 
-	// First, get the existing traveller to check if it has an accessory
-	existingTraveller, err := s.travellerRepo.GetByID(ctx, id)
-	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to fetch existing traveller",
-			zap.Int("traveller.id", id),
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
-		return
-	}
-
-	// Handle accessory update/creation
-	var accessoryID *int
-	if input.Accessory != nil {
-		if existingTraveller.AccessoryID != nil {
-			// Update existing accessory
-			s.logger.WithContext(ctx).Info("updating existing accessory",
-				zap.Int("accessory.id", *existingTraveller.AccessoryID),
-				zap.String("accessory.name", input.Accessory.Name),
-			)
-
-			updatedAccessory := domain.Accessory{
-				CommonModel: domain.CommonModel{ID: int64(*existingTraveller.AccessoryID)},
-				Name:        input.Accessory.Name,
-				HP:          input.Accessory.HP,
-				SP:          input.Accessory.SP,
-				PAtk:        input.Accessory.PAtk,
-				PDef:        input.Accessory.PDef,
-				EAtk:        input.Accessory.EAtk,
-				EDef:        input.Accessory.EDef,
-				Spd:         input.Accessory.Spd,
-				Crit:        input.Accessory.Crit,
-				Effect:      input.Accessory.Effect,
-			}
-
-			err = s.accessoryRepo.Update(ctx, &updatedAccessory)
-			if err != nil {
-				s.logger.WithContext(ctx).Error("failed to update accessory",
-					zap.Int("accessory.id", *existingTraveller.AccessoryID),
-					zap.String("error.type", "repository_error"),
-					zap.String("error.message", err.Error()),
-				)
-				return
-			}
-
-			accessoryID = existingTraveller.AccessoryID
-			s.logger.WithContext(ctx).Info("accessory updated successfully",
-				zap.Int("accessory.id", *existingTraveller.AccessoryID),
-			)
-		} else {
-			// Create new accessory
-			s.logger.WithContext(ctx).Info("creating new accessory for traveller",
-				zap.String("accessory.name", input.Accessory.Name),
-			)
-
-			newAccessory := domain.Accessory{
-				Name:   input.Accessory.Name,
-				HP:     input.Accessory.HP,
-				SP:     input.Accessory.SP,
-				PAtk:   input.Accessory.PAtk,
-				PDef:   input.Accessory.PDef,
-				EAtk:   input.Accessory.EAtk,
-				EDef:   input.Accessory.EDef,
-				Spd:    input.Accessory.Spd,
-				Crit:   input.Accessory.Crit,
-				Effect: input.Accessory.Effect,
-			}
-
-			err = s.accessoryRepo.Create(ctx, &newAccessory)
-			if err != nil {
-				s.logger.WithContext(ctx).Error("failed to create accessory",
-					zap.String("accessory.name", input.Accessory.Name),
-					zap.String("error.type", "repository_error"),
-					zap.String("error.message", err.Error()),
-				)
-				return
-			}
-
-			accessoryID = new(int)
-			*accessoryID = int(newAccessory.ID)
-
-			s.logger.WithContext(ctx).Info("accessory created successfully",
-				zap.String("accessory.name", input.Accessory.Name),
-				zap.Int64("accessory.id", newAccessory.ID),
-			)
-		}
-	} else {
-		// Keep existing accessory ID (no change)
-		accessoryID = existingTraveller.AccessoryID
-	}
-
+	// Parse release date
 	var releaseDate time.Time
 	if input.ReleaseDate != "" {
 		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
@@ -325,7 +210,7 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 		}
 	}
 
-	// Update traveller
+	// Build traveller domain object
 	updatedTraveller := domain.Traveller{
 		CommonModel: domain.CommonModel{ID: int64(id)},
 		Name:        input.Name,
@@ -334,10 +219,28 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 		ReleaseDate: releaseDate,
 		InfluenceID: constants.GetInfluenceID(input.Influence),
 		JobID:       constants.GetJobID(input.Job),
-		AccessoryID: accessoryID,
 	}
 
-	err = s.travellerRepo.Update(ctx, &updatedTraveller)
+	// Build accessory domain object if provided
+	var updatedAccessory *domain.Accessory
+	if input.Accessory != nil {
+		updatedAccessory = &domain.Accessory{
+			Name:   input.Accessory.Name,
+			HP:     input.Accessory.HP,
+			SP:     input.Accessory.SP,
+			PAtk:   input.Accessory.PAtk,
+			PDef:   input.Accessory.PDef,
+			EAtk:   input.Accessory.EAtk,
+			EDef:   input.Accessory.EDef,
+			Spd:    input.Accessory.Spd,
+			Crit:   input.Accessory.Crit,
+			Effect: input.Accessory.Effect,
+		}
+	}
+
+	// Update traveller with accessory in transaction
+	// Repository handles checking if accessory exists and decides INSERT vs UPDATE
+	err = s.travellerRepo.UpdateTravellerWithAccessory(ctx, id, &updatedTraveller, updatedAccessory)
 	if err != nil {
 		s.logger.WithContext(ctx).Error("failed to update traveller",
 			zap.Int("traveller.id", id),

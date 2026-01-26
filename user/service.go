@@ -46,7 +46,7 @@ func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res do
 		s.logger.WithContext(ctx).Warn("user not found",
 			zap.String("user.username", req.Username),
 		)
-		err = domain.ErrUserNotFound
+		err = domain.NewAuthenticationError("invalid credentials")
 		return
 	}
 
@@ -55,7 +55,7 @@ func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res do
 		s.logger.WithContext(ctx).Warn("invalid password",
 			zap.String("user.username", req.Username),
 		)
-		err = domain.ErrInvalidPassword
+		err = domain.NewAuthenticationError("invalid credentials")
 		return
 	}
 

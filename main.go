@@ -84,7 +84,9 @@ func main() {
 	}
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: dbConn,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		log.Fatal("failed to open gorm ", err)
 	}
@@ -136,7 +138,7 @@ func main() {
 	userRepo := postgresRepo.NewUserRepository(db, logger)
 
 	// Service
-	travellerService := traveller.NewTravellerService(travellerRepo, accessoryRepo, logger)
+	travellerService := traveller.NewTravellerService(travellerRepo, logger)
 	userService := user.NewUserService(userRepo, logger)
 	accessoryService := accessory.NewAccessoryService(accessoryRepo, logger)
 

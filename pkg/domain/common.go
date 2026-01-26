@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"fmt"
+	"net/http"
 	"time"
 
 	"gorm.io/gorm"
@@ -14,4 +16,15 @@ type CommonModel struct {
 	CreatedAt time.Time      `json:"created_at,omitempty" gorm:"column:created_at"`
 	UpdatedAt time.Time      `json:"updated_at,omitempty" gorm:"column:updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
+// ETag generates an ETag value based on the resource's last modification time.
+// The ETag is a quoted string containing the Unix timestamp of UpdatedAt.
+func (c CommonModel) ETag() string {
+	return fmt.Sprintf(`"%d"`, c.UpdatedAt.Unix())
+}
+
+// LastModified returns the last modification time in HTTP-date format (RFC 7231).
+func (c CommonModel) LastModified() string {
+	return c.UpdatedAt.UTC().Format(http.TimeFormat)
 }
