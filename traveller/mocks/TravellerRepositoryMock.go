@@ -95,6 +95,69 @@ func (_c *MockTravellerRepository_Create_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// CreateTravellerWithAccessory provides a mock function for the type MockTravellerRepository
+func (_mock *MockTravellerRepository) CreateTravellerWithAccessory(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) error {
+	ret := _mock.Called(ctx, traveller, accessory)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateTravellerWithAccessory")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Traveller, *domain.Accessory) error); ok {
+		r0 = returnFunc(ctx, traveller, accessory)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTravellerRepository_CreateTravellerWithAccessory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTravellerWithAccessory'
+type MockTravellerRepository_CreateTravellerWithAccessory_Call struct {
+	*mock.Call
+}
+
+// CreateTravellerWithAccessory is a helper method to define mock.On call
+//   - ctx context.Context
+//   - traveller *domain.Traveller
+//   - accessory *domain.Accessory
+func (_e *MockTravellerRepository_Expecter) CreateTravellerWithAccessory(ctx interface{}, traveller interface{}, accessory interface{}) *MockTravellerRepository_CreateTravellerWithAccessory_Call {
+	return &MockTravellerRepository_CreateTravellerWithAccessory_Call{Call: _e.mock.On("CreateTravellerWithAccessory", ctx, traveller, accessory)}
+}
+
+func (_c *MockTravellerRepository_CreateTravellerWithAccessory_Call) Run(run func(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory)) *MockTravellerRepository_CreateTravellerWithAccessory_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *domain.Traveller
+		if args[1] != nil {
+			arg1 = args[1].(*domain.Traveller)
+		}
+		var arg2 *domain.Accessory
+		if args[2] != nil {
+			arg2 = args[2].(*domain.Accessory)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTravellerRepository_CreateTravellerWithAccessory_Call) Return(err error) *MockTravellerRepository_CreateTravellerWithAccessory_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTravellerRepository_CreateTravellerWithAccessory_Call) RunAndReturn(run func(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) error) *MockTravellerRepository_CreateTravellerWithAccessory_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Delete provides a mock function for the type MockTravellerRepository
 func (_mock *MockTravellerRepository) Delete(ctx context.Context, id int) error {
 	ret := _mock.Called(ctx, id)
@@ -357,6 +420,75 @@ func (_c *MockTravellerRepository_Update_Call) Return(err error) *MockTravellerR
 }
 
 func (_c *MockTravellerRepository_Update_Call) RunAndReturn(run func(ctx context.Context, input *domain.Traveller) error) *MockTravellerRepository_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateTravellerWithAccessory provides a mock function for the type MockTravellerRepository
+func (_mock *MockTravellerRepository) UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) error {
+	ret := _mock.Called(ctx, id, traveller, accessory)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTravellerWithAccessory")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, *domain.Traveller, *domain.Accessory) error); ok {
+		r0 = returnFunc(ctx, id, traveller, accessory)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTravellerRepository_UpdateTravellerWithAccessory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTravellerWithAccessory'
+type MockTravellerRepository_UpdateTravellerWithAccessory_Call struct {
+	*mock.Call
+}
+
+// UpdateTravellerWithAccessory is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id int
+//   - traveller *domain.Traveller
+//   - accessory *domain.Accessory
+func (_e *MockTravellerRepository_Expecter) UpdateTravellerWithAccessory(ctx interface{}, id interface{}, traveller interface{}, accessory interface{}) *MockTravellerRepository_UpdateTravellerWithAccessory_Call {
+	return &MockTravellerRepository_UpdateTravellerWithAccessory_Call{Call: _e.mock.On("UpdateTravellerWithAccessory", ctx, id, traveller, accessory)}
+}
+
+func (_c *MockTravellerRepository_UpdateTravellerWithAccessory_Call) Run(run func(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory)) *MockTravellerRepository_UpdateTravellerWithAccessory_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 *domain.Traveller
+		if args[2] != nil {
+			arg2 = args[2].(*domain.Traveller)
+		}
+		var arg3 *domain.Accessory
+		if args[3] != nil {
+			arg3 = args[3].(*domain.Accessory)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTravellerRepository_UpdateTravellerWithAccessory_Call) Return(err error) *MockTravellerRepository_UpdateTravellerWithAccessory_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTravellerRepository_UpdateTravellerWithAccessory_Call) RunAndReturn(run func(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) error) *MockTravellerRepository_UpdateTravellerWithAccessory_Call {
 	_c.Call.Return(run)
 	return _c
 }

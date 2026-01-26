@@ -57,13 +57,11 @@ func (_mock *MockTravellerService) Create(ctx context.Context, input domain.Crea
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.CreateTravellerRequest) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
 	}
-
 	return r0, r1
 }
 

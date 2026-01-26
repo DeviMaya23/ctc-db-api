@@ -138,7 +138,7 @@ func main() {
 	userRepo := postgresRepo.NewUserRepository(db, logger)
 
 	// Service
-	travellerService := traveller.NewTravellerService(travellerRepo, accessoryRepo, logger)
+	travellerService := traveller.NewTravellerService(travellerRepo, logger)
 	userService := user.NewUserService(userRepo, logger)
 	accessoryService := accessory.NewAccessoryService(accessoryRepo, logger)
 
