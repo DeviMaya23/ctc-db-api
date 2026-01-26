@@ -58,11 +58,15 @@ func TestAccessoryServiceSuite(t *testing.T) {
 	suite.Run(t, new(AccessoryServiceSuite))
 }
 
-func (s *AccessoryServiceSuite) SetupSuite() {
+func (s *AccessoryServiceSuite) SetupTest() {
 	logger, _ := logging.NewDevelopmentLogger()
 
 	s.accessoryRepo = new(MockAccessoryRepository)
 	s.svc = NewAccessoryService(s.accessoryRepo, logger)
+}
+
+func (s *AccessoryServiceSuite) TearDownTest() {
+	s.accessoryRepo.AssertExpectations(s.T())
 }
 
 func (s *AccessoryServiceSuite) TestAccessoryService_NewService() {

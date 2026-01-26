@@ -29,10 +29,14 @@ func TestAccessoryHandlerSuite(t *testing.T) {
 	suite.Run(t, new(AccessoryHandlerSuite))
 }
 
-func (s *AccessoryHandlerSuite) SetupSuite() {
+func (s *AccessoryHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.accessoryService = new(mocks.MockAccessoryService)
 	s.handler = NewAccessoryHandler(s.e.Group(""), s.accessoryService)
+}
+
+func (s *AccessoryHandlerSuite) TearDownTest() {
+	s.accessoryService.AssertExpectations(s.T())
 }
 
 func (s *AccessoryHandlerSuite) TestAccessoryHandler_NewHandler() {

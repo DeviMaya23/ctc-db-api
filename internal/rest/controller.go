@@ -3,6 +3,7 @@ package rest
 import (
 	"net/http"
 
+	"lizobly/ctc-db-api/pkg/domain"
 	pkgValidator "lizobly/ctc-db-api/pkg/validator"
 
 	"github.com/go-playground/validator/v10"
@@ -100,4 +101,30 @@ func (c Controller) ResponseErrorValidation(ctx echo.Context, err error) error {
 		Message: "error validation",
 		Errors:  errMsg,
 	})
+}
+
+// HandleServiceError maps domain errors to appropriate HTTP responses
+// Returns true if error was handled, false if it's an unhandled error (should return 500)
+func (c Controller) HandleServiceError(ctx echo.Context, err error, operation string) error {
+	if err == nil {
+		return nil
+	}
+
+	// Import domain package at top of file to use domain.IsNotFoundError, etc.
+	// Check domain errors and map to HTTP status
+	if domain.IsNotFoundError(err) {
+		return c.NotFound(ctx, err.Error())
+	}
+	if domain.IsValidationError(err) {
+		return c.ResponseError(ctx, http.StatusBadRequest, "error "+operation, err.Error())
+	}
+	if domain.IsConflictError(err) {
+		return c.ResponseError(ctx, http.StatusConflict, "error "+operation, err.Error())
+	}
+	if domain.IsAuthenticationError(err) {
+		return c.ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
+	}
+
+	// Unhandled error - return 500
+	return c.InternalError(ctx, "error "+operation, err.Error())
 }

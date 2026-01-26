@@ -26,13 +26,17 @@ func TestTravellerServiceSuite(t *testing.T) {
 	suite.Run(t, new(TravellerServiceSuite))
 }
 
-func (s *TravellerServiceSuite) SetupSuite() {
+func (s *TravellerServiceSuite) SetupTest() {
 	logger, _ := logging.NewDevelopmentLogger()
 
 	s.travellerRepo = new(mocks.MockTravellerRepository)
 	s.accessoryRepo = new(mocks.MockAccessoryRepository)
 	s.svc = NewTravellerService(s.travellerRepo, s.accessoryRepo, logger)
+}
 
+func (s *TravellerServiceSuite) TearDownTest() {
+	s.travellerRepo.AssertExpectations(s.T())
+	s.accessoryRepo.AssertExpectations(s.T())
 }
 
 func (s *TravellerServiceSuite) TestTravellerService_NewService() {

@@ -105,10 +105,7 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error get data", err.Error())
+		return a.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Generate ETag from domain model
@@ -141,13 +138,7 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 
 	id, err := a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		if domain.IsValidationError(err) {
-			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
-		}
-		if domain.IsConflictError(err) {
-			return a.ResponseError(ctx, http.StatusConflict, "error create data", err.Error())
-		}
-		return a.InternalError(ctx, "error create data", err.Error())
+		return a.HandleServiceError(ctx, err, "create data")
 	}
 
 	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
@@ -166,10 +157,7 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		// Get current state to verify ETag
 		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
-			if domain.IsNotFoundError(err) {
-				return a.NotFound(ctx, err.Error())
-			}
-			return a.InternalError(ctx, "error get data", err.Error())
+			return a.HandleServiceError(ctx, err, "get data")
 		}
 
 		// Generate ETag from domain model
@@ -196,24 +184,12 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		if domain.IsValidationError(err) {
-			return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
-		}
-		if domain.IsConflictError(err) {
-			return a.ResponseError(ctx, http.StatusConflict, "error update data", err.Error())
-		}
-		return a.InternalError(ctx, "error update data", err.Error())
+		return a.HandleServiceError(ctx, err, "update data")
 	}
 
 	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error get updated data", err.Error())
+		return a.HandleServiceError(ctx, err, "get updated data")
 	}
 
 	// Set new ETag for updated resource from domain model
@@ -233,10 +209,7 @@ func (a *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = a.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		if domain.IsNotFoundError(err) {
-			return a.NotFound(ctx, err.Error())
-		}
-		return a.InternalError(ctx, "error delete data", err.Error())
+		return a.HandleServiceError(ctx, err, "delete data")
 	}
 
 	return a.NoContent(ctx)

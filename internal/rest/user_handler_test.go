@@ -28,11 +28,14 @@ func TestUserHandlerSuite(t *testing.T) {
 	suite.Run(t, new(UserHandlerSuite))
 }
 
-func (s *UserHandlerSuite) SetupSuite() {
+func (s *UserHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.userService = new(mocks.MockUserService)
 	s.handler = NewUserHandler(s.e.Group(""), s.userService)
+}
 
+func (s *UserHandlerSuite) TearDownTest() {
+	s.userService.AssertExpectations(s.T())
 }
 
 func (s *UserHandlerSuite) TestUserHandler_NewHandler() {
@@ -99,34 +102,18 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 			},
 		},
 		{
-			name: "failed ErrInvalidPassword",
+			name: "failed authentication - invalid credentials",
 			args: args{login},
 			want: want{
 				loginResponse: resp,
 				responseBody: StandardAPIResponse{
-					Message: "error",
-					Errors:  domain.ErrInvalidPassword.Error(),
+					Message: "error login",
+					Errors:  "invalid credentials",
 				},
 				statusCode: http.StatusUnauthorized,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.ErrInvalidPassword).Once()
-
-			},
-		},
-		{
-			name: "failed ErrUserNotFound",
-			args: args{login},
-			want: want{
-				loginResponse: resp,
-				responseBody: StandardAPIResponse{
-					Message: "error",
-					Errors:  domain.ErrUserNotFound.Error(),
-				},
-				statusCode: http.StatusUnauthorized,
-			},
-			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.ErrUserNotFound).Once()
+				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.NewAuthenticationError("invalid credentials")).Once()
 
 			},
 		},
@@ -136,7 +123,7 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 			want: want{
 				loginResponse: resp,
 				responseBody: StandardAPIResponse{
-					Message: "error",
+					Message: "error login",
 					Errors:  gorm.ErrCheckConstraintViolated.Error(),
 				},
 				statusCode: http.StatusInternalServerError,
