@@ -84,7 +84,9 @@ func main() {
 	}
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: dbConn,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		log.Fatal("failed to open gorm ", err)
 	}

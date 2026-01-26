@@ -134,6 +134,11 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	)
 
 	if err != nil {
+		// Check for duplicate key violation
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists")
+		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to create traveller", logFields...)
 		return
@@ -170,6 +175,11 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	)
 
 	if err != nil {
+		// Check for duplicate key violation
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists")
+		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to update traveller", logFields...)
 		return

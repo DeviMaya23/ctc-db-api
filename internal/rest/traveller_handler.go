@@ -141,8 +141,11 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 
 	id, err := a.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+		if domain.IsValidationError(err) {
 			return a.ResponseError(ctx, http.StatusBadRequest, "error create data", err.Error())
+		}
+		if domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusConflict, "error create data", err.Error())
 		}
 		return a.InternalError(ctx, "error create data", err.Error())
 	}
@@ -196,8 +199,11 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		if domain.IsNotFoundError(err) {
 			return a.NotFound(ctx, err.Error())
 		}
-		if domain.IsValidationError(err) || domain.IsConflictError(err) {
+		if domain.IsValidationError(err) {
 			return a.ResponseError(ctx, http.StatusBadRequest, "error update data", err.Error())
+		}
+		if domain.IsConflictError(err) {
+			return a.ResponseError(ctx, http.StatusConflict, "error update data", err.Error())
 		}
 		return a.InternalError(ctx, "error update data", err.Error())
 	}

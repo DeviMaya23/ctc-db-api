@@ -25,7 +25,9 @@ func TestUserRepository_Integration(t *testing.T) {
 	}
 	db, err := gorm.Open(pgGormDriver.New(pgGormDriver.Config{
 		Conn: dbConn,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		t.Fatal("failed to open gorm ", err)
 	}
