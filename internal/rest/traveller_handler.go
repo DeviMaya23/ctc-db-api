@@ -2,7 +2,7 @@ package rest
 
 import (
 	"context"
-	"fmt"
+	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -78,8 +78,8 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 		return a.InternalError(ctx, "error get data", err.Error())
 	}
 
-	// Set cache headers for list responses (shorter cache time)
-	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
+	// Set cache headers for list responses
+	helpers.SetListCacheHeaders(ctx)
 
 	return a.Ok(ctx, "success", result, nil)
 }
@@ -108,15 +108,9 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 		return a.HandleServiceError(ctx, err, "get data")
 	}
 
-	// Generate ETag from domain model
-	etag := fmt.Sprintf(`"%d"`, traveller.UpdatedAt.Unix())
-	ctx.Response().Header().Set("ETag", etag)
-	ctx.Response().Header().Set("Cache-Control", "public, max-age=600")
-	ctx.Response().Header().Set("Last-Modified", traveller.UpdatedAt.UTC().Format(http.TimeFormat))
-
-	// Check if client has cached version
-	if ctx.Request().Header.Get("If-None-Match") == etag {
-		return ctx.NoContent(http.StatusNotModified)
+	// Set cache headers and check if client has valid cached version
+	if helpers.SetCacheHeaders(ctx, traveller.ETag(), traveller.LastModified(), constants.CacheMaxAgeResource) {
+		return helpers.RespondNotModified(ctx)
 	}
 
 	response := domain.ToTravellerResponse(traveller)
@@ -141,8 +135,18 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 		return a.HandleServiceError(ctx, err, "create data")
 	}
 
+	traveller, err := a.Service.GetByID(ctx.Request().Context(), int(id))
+	if err != nil {
+		return a.HandleServiceError(ctx, err, "get created data")
+	}
+
+	// Set ETag and Last-Modified for created resource
+	ctx.Response().Header().Set("ETag", traveller.ETag())
+	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
+
 	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
-	return a.Created(ctx, "success", newTraveller, location)
+	response := domain.ToTravellerResponse(traveller)
+	return a.Created(ctx, "success", response, location)
 }
 
 func (a *TravellerHandler) Update(ctx echo.Context) error {
@@ -152,22 +156,16 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	}
 
 	// Check for optimistic locking with If-Match header
-	clientETag := ctx.Request().Header.Get("If-Match")
-	if clientETag != "" {
+	if ctx.Request().Header.Get("If-Match") != "" {
 		// Get current state to verify ETag
 		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
 			return a.HandleServiceError(ctx, err, "get data")
 		}
 
-		// Generate ETag from domain model
-		currentETag := fmt.Sprintf(`"%d"`, currentTraveller.UpdatedAt.Unix())
-
 		// Prevent lost updates - resource was modified
-		if clientETag != currentETag {
-			return ctx.JSON(http.StatusPreconditionFailed, map[string]string{
-				"error": "Resource has been modified by another request. Please refresh and try again.",
-			})
+		if !helpers.CheckETagMatch(ctx, currentTraveller.ETag()) {
+			return helpers.RespondPreconditionFailed(ctx)
 		}
 	}
 
@@ -192,10 +190,9 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 		return a.HandleServiceError(ctx, err, "get updated data")
 	}
 
-	// Set new ETag for updated resource from domain model
-	newETag := fmt.Sprintf(`"%d"`, traveller.UpdatedAt.Unix())
-	ctx.Response().Header().Set("ETag", newETag)
-	ctx.Response().Header().Set("Last-Modified", traveller.UpdatedAt.UTC().Format(http.TimeFormat))
+	// Set new ETag and Last-Modified for updated resource
+	ctx.Response().Header().Set("ETag", traveller.ETag())
+	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
 
 	response := domain.ToTravellerResponse(traveller)
 	return a.Ok(ctx, "success", response, nil)

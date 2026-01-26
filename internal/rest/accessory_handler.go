@@ -70,7 +70,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	}
 
 	// Set cache headers for list responses
-	ctx.Response().Header().Set("Cache-Control", "public, max-age=300")
+	helpers.SetListCacheHeaders(ctx)
 
 	return h.Ok(ctx, "success", result, nil)
 }

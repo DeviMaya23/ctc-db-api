@@ -157,6 +157,16 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 		Job:       "Warrior",
 	}
 
+	createdTraveller := domain.Traveller{
+		CommonModel: domain.CommonModel{ID: 1},
+		Name:        "Fiore",
+		Rarity:      5,
+		InfluenceID: constants.GetInfluenceID("Fame"),
+		Influence:   domain.Influence{Name: "Fame"},
+		JobID:       constants.GetJobID("Warrior"),
+		Job:         domain.Job{Name: "Warrior"},
+	}
+
 	tests := []struct {
 		name       string
 		args       args
@@ -169,12 +179,13 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			want: want{
 				responseBody: StandardAPIResponse{
 					Message: "success",
-					Data:    req,
+					Data:    domain.ToTravellerResponse(createdTraveller),
 				},
 				statusCode: http.StatusCreated,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				s.travellerService.On("Create", ctx.Request().Context(), param.requestBody).Return(int64(1), nil).Once()
+				s.travellerService.On("GetByID", ctx.Request().Context(), 1).Return(createdTraveller, nil).Once()
 			},
 		},
 		{

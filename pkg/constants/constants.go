@@ -123,3 +123,9 @@ const (
 	OrderDirAsc  = "asc"
 	OrderDirDesc = "desc"
 )
+
+// Cache-Control max-age values (in seconds)
+const (
+	CacheMaxAgeList     = 300 // 5 minutes for list endpoints
+	CacheMaxAgeResource = 600 // 10 minutes for individual resource endpoints
+)
