@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -41,25 +42,38 @@ func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res do
 		zap.String("user.username", req.Username),
 	)
 
+	// Always run bcrypt comparison to prevent timing-based username enumeration
+	// Use a dummy hash if user doesn't exist
 	user, err := s.userRepo.GetByUsername(ctx, req.Username)
+	dummyHash := "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy" // bcrypt hash of "dummy"
+	passwordHash := dummyHash
+	userFound := true
+
 	if err != nil {
-		s.logger.WithContext(ctx).Warn("user not found",
+		s.logger.WithContext(ctx).Warn("authentication failed",
+			zap.String("user.username", req.Username),
+		)
+		userFound = false
+	} else {
+		passwordHash = user.Password
+	}
+
+	// Always run bcrypt comparison regardless of whether user exists
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
+	if err != nil || !userFound {
+		s.logger.WithContext(ctx).Warn("authentication failed",
 			zap.String("user.username", req.Username),
 		)
 		err = domain.NewAuthenticationError("invalid credentials")
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
-	if err != nil {
-		s.logger.WithContext(ctx).Warn("invalid password",
-			zap.String("user.username", req.Username),
-		)
-		err = domain.NewAuthenticationError("invalid credentials")
+	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if jwtSecretKey == "" {
+		s.logger.WithContext(ctx).Error("JWT_SECRET_KEY not configured")
+		err = domain.NewAuthenticationError("authentication configuration error")
 		return
 	}
-
-	jwtSecretKey := helpers.EnvWithDefault("JWT_SECRET_KEY", "2catnipsforisla")
 	jwtTimeoutStr := helpers.EnvWithDefault("JWT_TIMEOUT", "10m")
 	jwtTimeout, _ := time.ParseDuration(jwtTimeoutStr)
 

@@ -120,7 +120,10 @@ func main() {
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	// Validator
-	validator := validator.NewValidator()
+	validator, err := validator.NewValidator()
+	if err != nil {
+		logger.Fatal("Failed to initialize validator", zap.Error(err))
+	}
 	e.Validator = validator
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {

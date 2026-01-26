@@ -13,6 +13,9 @@ import (
 func NewJWTMiddleware() echo.MiddlewareFunc {
 
 	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if jwtSecretKey == "" {
+		panic("JWT_SECRET_KEY is not set")
+	}
 	cfg := echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(domain.JWTClaims)
