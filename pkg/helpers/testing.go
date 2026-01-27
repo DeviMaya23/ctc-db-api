@@ -53,7 +53,8 @@ func GetHTTPTestRecorder(t *testing.T, method, url string, requestBody interface
 
 	e := echo.New()
 
-	validator := validator.NewValidator()
+	validator, err := validator.NewValidator()
+	assert.NoError(t, err)
 	e.Validator = validator
 
 	var body io.Reader

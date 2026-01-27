@@ -24,7 +24,7 @@ func NewTravellerRepository(db *gorm.DB, logger *logging.Logger) *TravellerRepos
 		logger: logger.Named("repository.traveller"),
 	}
 }
-func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
+func (r *TravellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetByID", "select", "m_traveller",
 		attribute.Int("traveller.id", id),
 	)
@@ -60,7 +60,7 @@ func (r TravellerRepository) GetByID(ctx context.Context, id int) (result domain
 	return
 }
 
-func (r TravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error) {
+func (r *TravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetList", "select", "m_traveller")
 	defer telemetry.EndSpanWithError(span, err)
 
@@ -108,7 +108,7 @@ func (r TravellerRepository) GetList(ctx context.Context, filter domain.ListTrav
 	return
 }
 
-func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
+func (r *TravellerRepository) Create(ctx context.Context, input *domain.Traveller) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Create", "insert", "m_traveller",
 		attribute.String("traveller.name", input.Name),
 		attribute.Int("traveller.rarity", input.Rarity),
@@ -150,7 +150,7 @@ func (r TravellerRepository) Create(ctx context.Context, input *domain.Traveller
 	return
 }
 
-func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller) (err error) {
+func (r *TravellerRepository) Update(ctx context.Context, input *domain.Traveller) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Update", "update", "m_traveller",
 		attribute.Int64("traveller.id", input.ID),
 		attribute.String("traveller.name", input.Name),
@@ -196,7 +196,7 @@ func (r TravellerRepository) Update(ctx context.Context, input *domain.Traveller
 	return
 }
 
-func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
+func (r *TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.Delete", "delete", "m_traveller",
 		attribute.Int("traveller.id", id),
 	)
@@ -236,7 +236,7 @@ func (r TravellerRepository) Delete(ctx context.Context, id int) (err error) {
 }
 
 // CreateTravellerWithAccessory creates a traveller and optionally an accessory in a single transaction
-func (r TravellerRepository) CreateTravellerWithAccessory(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
+func (r *TravellerRepository) CreateTravellerWithAccessory(ctx context.Context, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.CreateTravellerWithAccessory", "transaction", "m_traveller",
 		attribute.String("traveller.name", traveller.Name),
 		attribute.Bool("has_accessory", accessory != nil),
@@ -319,7 +319,7 @@ func (r TravellerRepository) CreateTravellerWithAccessory(ctx context.Context, t
 }
 
 // UpdateTravellerWithAccessory updates a traveller and handles accessory create/update in a single transaction
-func (r TravellerRepository) UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
+func (r *TravellerRepository) UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.UpdateTravellerWithAccessory", "transaction", "m_traveller",
 		attribute.Int("traveller.id", id),
 		attribute.String("traveller.name", traveller.Name),

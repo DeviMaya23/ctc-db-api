@@ -3,10 +3,11 @@ package user
 import (
 	"context"
 	"lizobly/ctc-db-api/pkg/domain"
-	"lizobly/ctc-db-api/pkg/helpers"
+	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/user/mocks"
 	"testing"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
@@ -18,19 +19,25 @@ import (
 
 type UserServiceSuite struct {
 	suite.Suite
-	userRepo *mocks.MockUserRepository
-	svc      *UserService
+	userRepo     *mocks.MockUserRepository
+	tokenService *pkgJWT.TokenService
+	svc          *UserService
+	logger       *logging.Logger
 }
 
 func TestUserServiceSuite(t *testing.T) {
 	suite.Run(t, new(UserServiceSuite))
 }
 
+func (s *UserServiceSuite) SetupSuite() {
+	s.logger, _ = logging.NewDevelopmentLogger()
+	s.tokenService = pkgJWT.NewTokenService("test-secret-key-for-unit-tests", 10*time.Minute, s.logger)
+}
+
 func (s *UserServiceSuite) SetupTest() {
-	logger, _ := logging.NewDevelopmentLogger()
 
 	s.userRepo = new(mocks.MockUserRepository)
-	s.svc = NewUserService(s.userRepo, logger)
+	s.svc = NewUserService(s.userRepo, s.tokenService, s.logger)
 }
 
 func (s *UserServiceSuite) TearDownTest() {
@@ -42,7 +49,8 @@ func (s *UserServiceSuite) TestUserService_NewService() {
 	s.T().Run("success", func(t *testing.T) {
 		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockUserRepository)
-		NewUserService(repo, logger)
+		tokenService := pkgJWT.NewTokenService("test-secret", 10*time.Minute, logger)
+		NewUserService(repo, tokenService, logger)
 	})
 }
 
@@ -125,9 +133,8 @@ func (s *UserServiceSuite) TestUserService_Login() {
 
 			assert.Nil(s.T(), err)
 
-			jwtSecretKey := helpers.EnvWithDefault("JWT_SECRET_KEY", "2catnipsforisla")
 			token, err := jwt.ParseWithClaims(got.Token, &domain.JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
-				return []byte(jwtSecretKey), nil
+				return []byte("test-secret-key-for-unit-tests"), nil
 			})
 
 			if err != nil {

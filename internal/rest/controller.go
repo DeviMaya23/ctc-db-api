@@ -76,25 +76,34 @@ func (c Controller) ResponseError(ctx echo.Context, httpStatus int, message stri
 }
 
 func (c Controller) ResponseErrorValidation(ctx echo.Context, err error) error {
-
-	// TODO : non go validator error
-	// _, ok := err.(*echo.HTTPError)
-	// if !ok {
-	// 	report = echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	// }
-
 	var errMsg []ValidationErrorFields
-	validate := ctx.Get("validator").(*pkgValidator.CustomValidator)
-	language := ctx.Request().Header.Get("Accept-Language")
-	translator, _ := validate.Translator.FindTranslator(language)
 
+	// Handle go-playground validator errors (from ctx.Validate)
 	if castedObject, ok := err.(validator.ValidationErrors); ok {
+		validate := ctx.Get("validator").(*pkgValidator.CustomValidator)
+		language := ctx.Request().Header.Get("Accept-Language")
+		translator, _ := validate.Translator.FindTranslator(language)
+
 		for _, e := range castedObject {
 			errMsg = append(errMsg, ValidationErrorFields{
 				Field:   strcase.ToSnake(e.Field()),
 				Message: e.Translate(translator),
 			})
 		}
+	} else if validationErr, ok := err.(*domain.ValidationError); ok {
+		// Handle domain ValidationError from services
+		for _, fieldErr := range validationErr.Errors {
+			errMsg = append(errMsg, ValidationErrorFields{
+				Field:   strcase.ToSnake(fieldErr.Field),
+				Message: fieldErr.Message,
+			})
+		}
+	} else {
+		// Fallback for unknown validation error types
+		errMsg = append(errMsg, ValidationErrorFields{
+			Field:   "general",
+			Message: err.Error(),
+		})
 	}
 
 	return ctx.JSON(http.StatusBadRequest, StandardAPIResponse{
@@ -116,13 +125,16 @@ func (c Controller) HandleServiceError(ctx echo.Context, err error, operation st
 		return c.NotFound(ctx, err.Error())
 	}
 	if domain.IsValidationError(err) {
-		return c.ResponseError(ctx, http.StatusBadRequest, "error "+operation, err.Error())
+		return c.ResponseErrorValidation(ctx, err)
 	}
 	if domain.IsConflictError(err) {
 		return c.ResponseError(ctx, http.StatusConflict, "error "+operation, err.Error())
 	}
 	if domain.IsAuthenticationError(err) {
 		return c.ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
+	}
+	if domain.IsInternalError(err) {
+		return c.InternalError(ctx, err.Error(), nil)
 	}
 
 	// Unhandled error - return 500

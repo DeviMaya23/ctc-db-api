@@ -17,7 +17,7 @@ type CustomValidator struct {
 	Translator *ut.UniversalTranslator
 }
 
-func NewValidator() *CustomValidator {
+func NewValidator() (*CustomValidator, error) {
 
 	newValidator := validator.New()
 
@@ -28,13 +28,13 @@ func NewValidator() *CustomValidator {
 
 	english, ok := uni.GetTranslator("en")
 	if !ok {
-		fmt.Println("failed get en translator")
+		return nil, fmt.Errorf("failed to get en translator")
 	}
 	en_translations.RegisterDefaultTranslations(newValidator, english)
 
 	indonesian, ok := uni.GetTranslator("id")
 	if !ok {
-		fmt.Println("failed get id translator")
+		return nil, fmt.Errorf("failed to get id translator")
 	}
 	id_translations.RegisterDefaultTranslations(newValidator, indonesian)
 
@@ -62,7 +62,7 @@ func NewValidator() *CustomValidator {
 	return &CustomValidator{
 		Validator:  newValidator,
 		Translator: uni,
-	}
+	}, nil
 }
 
 func (cv *CustomValidator) Validate(i interface{}) error {

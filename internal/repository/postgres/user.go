@@ -25,7 +25,7 @@ func NewUserRepository(db *gorm.DB, logger *logging.Logger) *UserRepository {
 	}
 }
 
-func (r UserRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
+func (r *UserRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
 	// Start database span
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.user", "UserRepository.GetByUsername", "select", "m_user",
 		attribute.String("user.username", username),

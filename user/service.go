@@ -3,12 +3,10 @@ package user
 import (
 	"context"
 	"lizobly/ctc-db-api/pkg/domain"
-	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -18,15 +16,21 @@ type UserRepository interface {
 	GetByUsername(ctx context.Context, username string) (result domain.User, err error)
 }
 
-type UserService struct {
-	userRepo UserRepository
-	logger   *logging.Logger
+type TokenService interface {
+	GenerateToken(ctx context.Context, username string) (token string, expiresAt time.Time, err error)
 }
 
-func NewUserService(u UserRepository, logger *logging.Logger) *UserService {
+type UserService struct {
+	userRepo     UserRepository
+	tokenService TokenService
+	logger       *logging.Logger
+}
+
+func NewUserService(u UserRepository, ts TokenService, logger *logging.Logger) *UserService {
 	return &UserService{
-		userRepo: u,
-		logger:   logger.Named("service.user"),
+		userRepo:     u,
+		tokenService: ts,
+		logger:       logger.Named("service.user"),
 	}
 }
 
@@ -41,51 +45,40 @@ func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res do
 		zap.String("user.username", req.Username),
 	)
 
+	// Always run bcrypt comparison to prevent timing-based username enumeration
 	user, err := s.userRepo.GetByUsername(ctx, req.Username)
+	dummyHash := "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy" // bcrypt hash of "dummy"
+	passwordHash := dummyHash
+	userFound := true
+
 	if err != nil {
-		s.logger.WithContext(ctx).Warn("user not found",
+		userFound = false
+	} else {
+		passwordHash = user.Password
+	}
+
+	// Always run bcrypt comparison regardless of whether user exists
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
+	if err != nil || !userFound {
+		s.logger.WithContext(ctx).Warn("authentication failed",
 			zap.String("user.username", req.Username),
 		)
 		err = domain.NewAuthenticationError("invalid credentials")
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	// Generate JWT token
+	token, expiresAt, err := s.tokenService.GenerateToken(ctx, user.Username)
 	if err != nil {
-		s.logger.WithContext(ctx).Warn("invalid password",
-			zap.String("user.username", req.Username),
-		)
-		err = domain.NewAuthenticationError("invalid credentials")
-		return
-	}
-
-	jwtSecretKey := helpers.EnvWithDefault("JWT_SECRET_KEY", "2catnipsforisla")
-	jwtTimeoutStr := helpers.EnvWithDefault("JWT_TIMEOUT", "10m")
-	jwtTimeout, _ := time.ParseDuration(jwtTimeoutStr)
-
-	exp := time.Now().Add(jwtTimeout)
-	claims := domain.JWTClaims{
-		Username: user.Username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(exp),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	t, err := token.SignedString([]byte(jwtSecretKey))
-	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to generate JWT token",
-			zap.String("user.username", req.Username),
-			zap.String("error.message", err.Error()),
-		)
-		return
+		return res, err
 	}
 
 	res.Username = req.Username
-	res.Token = t
+	res.Token = token
 
 	s.logger.WithContext(ctx).Info("login successful",
 		zap.String("user.username", req.Username),
-		zap.Time("token.expiration", exp),
+		zap.Time("token.expiration", expiresAt),
 	)
 
 	return

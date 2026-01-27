@@ -50,7 +50,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListAccessoryRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&filter)
@@ -66,7 +66,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return h.InternalError(ctx, "error get data", err.Error())
+		return h.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Set cache headers for list responses

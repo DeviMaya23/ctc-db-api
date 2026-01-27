@@ -59,7 +59,7 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListTravellerRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&filter)
@@ -75,7 +75,7 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 
 	result, err := a.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return a.InternalError(ctx, "error get data", err.Error())
+		return a.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Set cache headers for list responses
@@ -122,7 +122,7 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 	var newTraveller domain.CreateTravellerRequest
 	err := ctx.Bind(&newTraveller)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&newTraveller)
@@ -172,7 +172,7 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	var updateRequest domain.UpdateTravellerRequest
 	err = ctx.Bind(&updateRequest)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&updateRequest)

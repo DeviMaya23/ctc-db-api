@@ -24,7 +24,7 @@ func NewAccessoryRepository(db *gorm.DB, logger *logging.Logger) *AccessoryRepos
 	}
 }
 
-func (r AccessoryRepository) Create(ctx context.Context, input *domain.Accessory) (err error) {
+func (r *AccessoryRepository) Create(ctx context.Context, input *domain.Accessory) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Create", "insert", "m_accessory",
 		attribute.String("accessory.name", input.Name),
 	)
@@ -57,7 +57,7 @@ func (r AccessoryRepository) Create(ctx context.Context, input *domain.Accessory
 	return
 }
 
-func (r AccessoryRepository) Update(ctx context.Context, input *domain.Accessory) (err error) {
+func (r *AccessoryRepository) Update(ctx context.Context, input *domain.Accessory) (err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Update", "update", "m_accessory",
 		attribute.Int64("accessory.id", input.ID),
 		attribute.String("accessory.name", input.Name),
@@ -103,7 +103,7 @@ func (r AccessoryRepository) Update(ctx context.Context, input *domain.Accessory
 	return
 }
 
-func (r AccessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []domain.Accessory, ownerNames map[int64]string, total int64, err error) {
+func (r *AccessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []domain.Accessory, ownerNames map[int64]string, total int64, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.GetList", "select", "m_accessory")
 	defer telemetry.EndSpanWithError(span, err)
 
