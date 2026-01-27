@@ -1,8 +1,9 @@
-package rest
+package traveller
 
 import (
 	"context"
 	"lizobly/ctc-db-api/pkg/constants"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -20,7 +21,7 @@ type TravellerService interface {
 }
 
 type TravellerHandler struct {
-	Controller
+	controller.Controller
 	Service TravellerService
 }
 

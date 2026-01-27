@@ -1,4 +1,4 @@
-package postgres
+package traveller
 
 import (
 	"context"

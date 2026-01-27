@@ -1,9 +1,10 @@
-package rest
+package traveller
 
 import (
 	"encoding/json"
-	"lizobly/ctc-db-api/internal/rest/mocks"
+	"lizobly/ctc-db-api/internal/traveller/mocks"
 	"lizobly/ctc-db-api/pkg/constants"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -73,7 +74,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			args: args{"1"},
 			want: want{
 				traveller: traveller,
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "success",
 					Data:    domain.ToTravellerResponse(traveller),
 				},
@@ -90,7 +91,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			args: args{""},
 			want: want{
 				traveller: traveller,
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error validation",
 					Errors:  "id not found",
 				},
@@ -177,7 +178,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			name: "success create traveller",
 			args: args{req},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "success",
 					Data:    domain.ToTravellerResponse(createdTraveller),
 				},
@@ -206,7 +207,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			name: "failed create",
 			args: args{req},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error create data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
@@ -282,7 +283,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "success update traveller",
 			args: args{"1", updateRequest, nil},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "success",
 					Data:    domain.ToTravellerResponse(updatedTraveller),
 				},
@@ -311,7 +312,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "failed invalid id",
 			args: args{"", domain.UpdateTravellerRequest{}, nil},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error validation",
 					Errors:  "id not found",
 				},
@@ -329,7 +330,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "failed update",
 			args: args{"1", updateRequest, nil},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error update data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
@@ -406,7 +407,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			name: "failed invalid id",
 			args: args{""},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error validation",
 					Errors:  "id not found",
 				},
@@ -417,7 +418,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			name: "failed delete",
 			args: args{"1"},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error delete data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},
@@ -561,7 +562,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetList() {
 				queryParams: map[string]string{},
 			},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error get data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},

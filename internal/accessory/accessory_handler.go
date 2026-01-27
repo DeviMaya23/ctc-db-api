@@ -1,7 +1,8 @@
-package rest
+package accessory
 
 import (
 	"context"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -14,7 +15,7 @@ type AccessoryService interface {
 }
 
 type AccessoryHandler struct {
-	Controller
+	controller.Controller
 	Service AccessoryService
 }
 

@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
+	"lizobly/ctc-db-api/internal/user/mocks"
 	"lizobly/ctc-db-api/pkg/domain"
 	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
-	"lizobly/ctc-db-api/user/mocks"
 	"testing"
 	"time"
 
@@ -21,7 +21,7 @@ type UserServiceSuite struct {
 	suite.Suite
 	userRepo     *mocks.MockUserRepository
 	tokenService *pkgJWT.TokenService
-	svc          *UserService
+	svc          *userService
 	logger       *logging.Logger
 }
 

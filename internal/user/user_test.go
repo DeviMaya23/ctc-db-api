@@ -1,4 +1,4 @@
-package postgres
+package user
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type UserRepositorySuite struct {
 	suite.Suite
 	db   *gorm.DB
 	mock sqlmock.Sqlmock
-	repo *UserRepository
+	repo *userRepository
 }
 
 func TestUserRepositorySuite(t *testing.T) {

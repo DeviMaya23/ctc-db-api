@@ -1,4 +1,4 @@
-package postgres
+package user
 
 import (
 	"context"
@@ -13,19 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type userRepository struct {
 	db     *gorm.DB
 	logger *logging.Logger
 }
 
-func NewUserRepository(db *gorm.DB, logger *logging.Logger) *UserRepository {
-	return &UserRepository{
+func NewUserRepository(db *gorm.DB, logger *logging.Logger) *userRepository {
+	return &userRepository{
 		db:     db,
 		logger: logger.Named("repository.user"),
 	}
 }
 
-func (r *UserRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
+func (r *userRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
 	// Start database span
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.user", "UserRepository.GetByUsername", "select", "m_user",
 		attribute.String("user.username", username),

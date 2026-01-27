@@ -2,6 +2,7 @@ package accessory
 
 import (
 	"context"
+	"lizobly/ctc-db-api/internal/accessory/mocks"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
@@ -13,44 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type MockAccessoryRepository struct {
-	mock.Mock
-}
-
-func (m *MockAccessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []domain.Accessory, ownerNames map[int64]string, total int64, err error) {
-	args := m.Called(ctx, filter, offset, limit)
-	if args.Get(0) != nil {
-		result = args.Get(0).([]domain.Accessory)
-	}
-	if args.Get(1) != nil {
-		ownerNames = args.Get(1).(map[int64]string)
-	}
-	total = args.Get(2).(int64)
-	if args.Get(3) != nil {
-		err = args.Get(3).(error)
-	}
-	return
-}
-
-func (m *MockAccessoryRepository) Create(ctx context.Context, input *domain.Accessory) (err error) {
-	args := m.Called(ctx, input)
-	if args.Get(0) != nil {
-		err = args.Get(0).(error)
-	}
-	return
-}
-
-func (m *MockAccessoryRepository) Update(ctx context.Context, input *domain.Accessory) (err error) {
-	args := m.Called(ctx, input)
-	if args.Get(0) != nil {
-		err = args.Get(0).(error)
-	}
-	return
-}
-
 type AccessoryServiceSuite struct {
 	suite.Suite
-	accessoryRepo *MockAccessoryRepository
+	accessoryRepo *mocks.MockAccessoryRepository
 	svc           *Service
 }
 
@@ -61,7 +27,7 @@ func TestAccessoryServiceSuite(t *testing.T) {
 func (s *AccessoryServiceSuite) SetupTest() {
 	logger, _ := logging.NewDevelopmentLogger()
 
-	s.accessoryRepo = new(MockAccessoryRepository)
+	s.accessoryRepo = new(mocks.MockAccessoryRepository)
 	s.svc = NewAccessoryService(s.accessoryRepo, logger)
 }
 
@@ -72,7 +38,7 @@ func (s *AccessoryServiceSuite) TearDownTest() {
 func (s *AccessoryServiceSuite) TestAccessoryService_NewService() {
 	s.T().Run("success", func(t *testing.T) {
 		logger, _ := logging.NewDevelopmentLogger()
-		repo := new(MockAccessoryRepository)
+		repo := new(mocks.MockAccessoryRepository)
 		svc := NewAccessoryService(repo, logger)
 		assert.NotNil(t, svc)
 	})

@@ -1,4 +1,4 @@
-package postgres
+package accessory
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type AccessoryRepositorySuite struct {
 	suite.Suite
 	db   *gorm.DB
 	mock sqlmock.Sqlmock
-	repo *AccessoryRepository
+	repo *accessoryRepository
 }
 
 func TestAccessoryRepositorySuite(t *testing.T) {

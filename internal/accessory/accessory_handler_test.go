@@ -1,8 +1,9 @@
-package rest
+package accessory
 
 import (
 	"encoding/json"
-	"lizobly/ctc-db-api/internal/rest/mocks"
+	"lizobly/ctc-db-api/internal/accessory/mocks"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -205,7 +206,7 @@ func (s *AccessoryHandlerSuite) TestAccessoryHandler_GetList() {
 				queryParams: map[string]string{},
 			},
 			want: want{
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error get data",
 					Errors:  gorm.ErrInvalidDB.Error(),
 				},

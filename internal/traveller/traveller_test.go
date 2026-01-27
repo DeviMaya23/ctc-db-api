@@ -1,4 +1,4 @@
-package postgres
+package traveller
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type TravellerRepositorySuite struct {
 	suite.Suite
 	db   *gorm.DB
 	mock sqlmock.Sqlmock
-	repo *TravellerRepository
+	repo *travellerRepository
 }
 
 func TestTravellerRepositorySuite(t *testing.T) {

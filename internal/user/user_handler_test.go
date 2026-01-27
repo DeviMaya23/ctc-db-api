@@ -1,8 +1,9 @@
-package rest
+package user
 
 import (
 	"encoding/json"
-	"lizobly/ctc-db-api/internal/rest/mocks"
+	"lizobly/ctc-db-api/internal/user/mocks"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"net/http"
@@ -45,7 +46,7 @@ func (s *UserHandlerSuite) TestUserHandler_NewHandler() {
 
 }
 
-func (s *UserHandlerSuite) TestTravellerHandler_Login() {
+func (s *UserHandlerSuite) TestUserHandler_Login() {
 
 	type args struct {
 		requestBody interface{}
@@ -72,11 +73,11 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 		beforeTest func(ctx echo.Context, param args, want want)
 	}{
 		{
-			name: "success get traveller",
+			name: "success get user",
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "success",
 					Data:    resp,
 				},
@@ -106,7 +107,7 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error login",
 					Errors:  "invalid credentials",
 				},
@@ -122,7 +123,7 @@ func (s *UserHandlerSuite) TestTravellerHandler_Login() {
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: StandardAPIResponse{
+				responseBody: controller.StandardAPIResponse{
 					Message: "error login",
 					Errors:  gorm.ErrCheckConstraintViolated.Error(),
 				},

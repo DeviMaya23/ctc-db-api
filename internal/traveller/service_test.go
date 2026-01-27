@@ -2,11 +2,11 @@ package traveller
 
 import (
 	"context"
+	"lizobly/ctc-db-api/internal/traveller/mocks"
 	"lizobly/ctc-db-api/pkg/constants"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
-	"lizobly/ctc-db-api/traveller/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

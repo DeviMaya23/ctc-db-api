@@ -20,21 +20,21 @@ type TokenService interface {
 	GenerateToken(ctx context.Context, username string) (token string, expiresAt time.Time, err error)
 }
 
-type UserService struct {
+type userService struct {
 	userRepo     UserRepository
 	tokenService TokenService
 	logger       *logging.Logger
 }
 
-func NewUserService(u UserRepository, ts TokenService, logger *logging.Logger) *UserService {
-	return &UserService{
+func NewUserService(u UserRepository, ts TokenService, logger *logging.Logger) *userService {
+	return &userService{
 		userRepo:     u,
 		tokenService: ts,
 		logger:       logger.Named("service.user"),
 	}
 }
 
-func (s UserService) Login(ctx context.Context, req domain.LoginRequest) (res domain.LoginResponse, err error) {
+func (s *userService) Login(ctx context.Context, req domain.LoginRequest) (res domain.LoginResponse, err error) {
 	// Start service span
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.user", "UserService.Login",
 		attribute.String("user.username", req.Username),

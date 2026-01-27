@@ -1,7 +1,8 @@
-package rest
+package user
 
 import (
 	"context"
+	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"net/http"
 
@@ -13,7 +14,7 @@ type UserService interface {
 }
 
 type UserHandler struct {
-	Controller
+	controller.Controller
 	Service UserService
 }
 

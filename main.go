@@ -8,18 +8,16 @@ import (
 	"os"
 	"time"
 
-	"lizobly/ctc-db-api/accessory"
 	_ "lizobly/ctc-db-api/docs"
-	postgresRepo "lizobly/ctc-db-api/internal/repository/postgres"
-	"lizobly/ctc-db-api/internal/rest"
+	"lizobly/ctc-db-api/internal/accessory"
+	"lizobly/ctc-db-api/internal/traveller"
+	"lizobly/ctc-db-api/internal/user"
 	"lizobly/ctc-db-api/pkg/helpers"
 	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
 	pkgMiddleware "lizobly/ctc-db-api/pkg/middleware"
 	"lizobly/ctc-db-api/pkg/telemetry"
 	"lizobly/ctc-db-api/pkg/validator"
-	"lizobly/ctc-db-api/traveller"
-	"lizobly/ctc-db-api/user"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -198,9 +196,9 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 	tokenService := pkgJWT.NewTokenService(jwtSecretKey, jwtTimeout, logger)
 
 	// Initialize repositories
-	travellerRepo := postgresRepo.NewTravellerRepository(db, logger)
-	accessoryRepo := postgresRepo.NewAccessoryRepository(db, logger)
-	userRepo := postgresRepo.NewUserRepository(db, logger)
+	travellerRepo := traveller.NewTravellerRepository(db, logger)
+	accessoryRepo := accessory.NewAccessoryRepository(db, logger)
+	userRepo := user.NewUserRepository(db, logger)
 
 	// Initialize services
 	travellerService := traveller.NewTravellerService(travellerRepo, logger)
@@ -215,7 +213,7 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 	}
 
 	// Register handlers
-	rest.NewTravellerHandler(v1, travellerService)
-	rest.NewUserHandler(v1, userService)
-	rest.NewAccessoryHandler(v1, accessoryService)
+	traveller.NewTravellerHandler(v1, travellerService)
+	user.NewUserHandler(v1, userService)
+	accessory.NewAccessoryHandler(v1, accessoryService)
 }
