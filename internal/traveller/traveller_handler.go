@@ -56,33 +56,33 @@ func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler 
 //	@Failure		400	{object}	StandardAPIResponse
 //	@Failure		500	{object}	StandardAPIResponse
 //	@Router			/travellers [get]
-func (a *TravellerHandler) GetList(ctx echo.Context) error {
+func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListTravellerRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&filter)
 	if err != nil {
-		return a.ResponseErrorValidation(ctx, err)
+		return h.ResponseErrorValidation(ctx, err)
 	}
 
 	var params helpers.PaginationParams
 	err = ctx.Bind(&params)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
 	}
 
-	result, err := a.Service.GetList(ctx.Request().Context(), filter, params)
+	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "get data")
+		return h.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Set cache headers for list responses
 	helpers.SetListCacheHeaders(ctx)
 
-	return a.Ok(ctx, "success", result, nil)
+	return h.Ok(ctx, "success", result, nil)
 }
 
 // GetByID godoc
@@ -98,15 +98,15 @@ func (a *TravellerHandler) GetList(ctx echo.Context) error {
 //	@Failure		404	{object}	StandardAPIResponse
 //	@Failure		500	{object}	StandardAPIResponse
 //	@Router			/travellers/{id} [get]
-func (a *TravellerHandler) GetByID(ctx echo.Context) error {
+func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return h.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
 	}
 
-	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "get data")
+		return h.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Set cache headers and check if client has valid cached version
@@ -115,30 +115,30 @@ func (a *TravellerHandler) GetByID(ctx echo.Context) error {
 	}
 
 	response := domain.ToTravellerResponse(traveller)
-	return a.Ok(ctx, "success", response, nil)
+	return h.Ok(ctx, "success", response, nil)
 }
 
-func (a *TravellerHandler) Create(ctx echo.Context) error {
+func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	var newTraveller domain.CreateTravellerRequest
 	err := ctx.Bind(&newTraveller)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&newTraveller)
 	if err != nil {
-		return a.ResponseErrorValidation(ctx, err)
+		return h.ResponseErrorValidation(ctx, err)
 	}
 
-	id, err := a.Service.Create(ctx.Request().Context(), newTraveller)
+	id, err := h.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "create data")
+		return h.HandleServiceError(ctx, err, "create data")
 	}
 
-	traveller, err := a.Service.GetByID(ctx.Request().Context(), int(id))
+	traveller, err := h.Service.GetByID(ctx.Request().Context(), int(id))
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "get created data")
+		return h.HandleServiceError(ctx, err, "get created data")
 	}
 
 	// Set ETag and Last-Modified for created resource
@@ -147,21 +147,21 @@ func (a *TravellerHandler) Create(ctx echo.Context) error {
 
 	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
 	response := domain.ToTravellerResponse(traveller)
-	return a.Created(ctx, "success", response, location)
+	return h.Created(ctx, "success", response, location)
 }
 
-func (a *TravellerHandler) Update(ctx echo.Context) error {
+func (h *TravellerHandler) Update(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return h.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
 	}
 
 	// Check for optimistic locking with If-Match header
 	if ctx.Request().Header.Get("If-Match") != "" {
 		// Get current state to verify ETag
-		currentTraveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+		currentTraveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
-			return a.HandleServiceError(ctx, err, "get data")
+			return h.HandleServiceError(ctx, err, "get data")
 		}
 
 		// Prevent lost updates - resource was modified
@@ -173,22 +173,22 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	var updateRequest domain.UpdateTravellerRequest
 	err = ctx.Bind(&updateRequest)
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&updateRequest)
 	if err != nil {
-		return a.ResponseErrorValidation(ctx, err)
+		return h.ResponseErrorValidation(ctx, err)
 	}
 
-	err = a.Service.Update(ctx.Request().Context(), id, updateRequest)
+	err = h.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "update data")
+		return h.HandleServiceError(ctx, err, "update data")
 	}
 
-	traveller, err := a.Service.GetByID(ctx.Request().Context(), id)
+	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "get updated data")
+		return h.HandleServiceError(ctx, err, "get updated data")
 	}
 
 	// Set new ETag and Last-Modified for updated resource
@@ -196,19 +196,19 @@ func (a *TravellerHandler) Update(ctx echo.Context) error {
 	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
 
 	response := domain.ToTravellerResponse(traveller)
-	return a.Ok(ctx, "success", response, nil)
+	return h.Ok(ctx, "success", response, nil)
 }
 
-func (a *TravellerHandler) Delete(ctx echo.Context) error {
+func (h *TravellerHandler) Delete(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return a.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return h.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
 	}
 
-	err = a.Service.Delete(ctx.Request().Context(), id)
+	err = h.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		return a.HandleServiceError(ctx, err, "delete data")
+		return h.HandleServiceError(ctx, err, "delete data")
 	}
 
-	return a.NoContent(ctx)
+	return h.NoContent(ctx)
 }
