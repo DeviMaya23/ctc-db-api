@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/user/mocks"
+	"os"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -20,17 +21,22 @@ type UserServiceSuite struct {
 	suite.Suite
 	userRepo *mocks.MockUserRepository
 	svc      *UserService
+	logger   *logging.Logger
 }
 
 func TestUserServiceSuite(t *testing.T) {
 	suite.Run(t, new(UserServiceSuite))
 }
 
+func (s *UserServiceSuite) SetupSuite() {
+	os.Setenv("JWT_SECRET_KEY", "test-secret-key-for-unit-tests")
+	s.logger, _ = logging.NewDevelopmentLogger()
+}
+
 func (s *UserServiceSuite) SetupTest() {
-	logger, _ := logging.NewDevelopmentLogger()
 
 	s.userRepo = new(mocks.MockUserRepository)
-	s.svc = NewUserService(s.userRepo, logger)
+	s.svc = NewUserService(s.userRepo, s.logger)
 }
 
 func (s *UserServiceSuite) TearDownTest() {

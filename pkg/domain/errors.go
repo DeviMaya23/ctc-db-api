@@ -25,22 +25,38 @@ func IsNotFoundError(err error) bool {
 	return errors.As(err, new(*NotFoundError))
 }
 
+// FieldError represents a single field validation error
+type FieldError struct {
+	Field   string
+	Message string
+}
+
 // ValidationError represents a validation error (400)
 type ValidationError struct {
-	Message string
-	Field   string
+	Errors []FieldError
 }
 
 func (e *ValidationError) Error() string {
-	if e.Field != "" {
-		return fmt.Sprintf("validation error on field '%s': %s", e.Field, e.Message)
+	if len(e.Errors) == 0 {
+		return "validation error"
 	}
-	return fmt.Sprintf("validation error: %s", e.Message)
+	if len(e.Errors) == 1 {
+		return fmt.Sprintf("validation error on field '%s': %s", e.Errors[0].Field, e.Errors[0].Message)
+	}
+	return fmt.Sprintf("validation error: %d fields failed", len(e.Errors))
 }
 
-// NewValidationError creates a new ValidationError
-func NewValidationError(message string, field string) error {
-	return &ValidationError{Message: message, Field: field}
+// AddFieldError adds a field error to the ValidationError
+func (e *ValidationError) AddFieldError(field, message string) {
+	e.Errors = append(e.Errors, FieldError{
+		Field:   field,
+		Message: message,
+	})
+}
+
+// NewValidationError creates a new ValidationError with field errors
+func NewValidationError(errors []FieldError) error {
+	return &ValidationError{Errors: errors}
 }
 
 // IsValidationError checks if an error is a ValidationError
