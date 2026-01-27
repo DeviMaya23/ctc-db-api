@@ -18,7 +18,7 @@ import (
 type TravellerServiceSuite struct {
 	suite.Suite
 	travellerRepo *mocks.MockTravellerRepository
-	svc           *Service
+	svc           *travellerService
 }
 
 func TestTravellerServiceSuite(t *testing.T) {

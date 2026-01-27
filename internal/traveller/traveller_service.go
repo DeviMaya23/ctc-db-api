@@ -23,19 +23,19 @@ type TravellerRepository interface {
 	UpdateTravellerWithAccessory(ctx context.Context, id int, traveller *domain.Traveller, accessory *domain.Accessory) (err error)
 }
 
-type Service struct {
+type travellerService struct {
 	travellerRepo TravellerRepository
 	logger        *logging.Logger
 }
 
-func NewTravellerService(t TravellerRepository, logger *logging.Logger) *Service {
-	return &Service{
+func NewTravellerService(t TravellerRepository, logger *logging.Logger) *travellerService {
+	return &travellerService{
 		travellerRepo: t,
 		logger:        logger.Named("service.traveller"),
 	}
 }
 
-func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err error) {
+func (s *travellerService) GetByID(ctx context.Context, id int) (res domain.Traveller, err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.GetByID",
 		attribute.Int("traveller.id", id),
 	)
@@ -63,7 +63,7 @@ func (s Service) GetByID(ctx context.Context, id int) (res domain.Traveller, err
 	return
 }
 
-func (s Service) GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error) {
+func (s *travellerService) GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.GetList",
 		attribute.Int("page", params.Page),
 		attribute.Int("page_size", params.PageSize),
@@ -114,7 +114,7 @@ func (s Service) GetList(ctx context.Context, filter domain.ListTravellerRequest
 	return
 }
 
-func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error) {
+func (s *travellerService) Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Create",
 		attribute.String("traveller.name", input.Name),
 	)
@@ -184,7 +184,7 @@ func (s Service) Create(ctx context.Context, input domain.CreateTravellerRequest
 	return newTraveller.ID, nil
 }
 
-func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error) {
+func (s *travellerService) Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Update",
 		attribute.Int("traveller.id", id),
 		attribute.String("traveller.name", input.Name),
@@ -257,7 +257,7 @@ func (s Service) Update(ctx context.Context, id int, input domain.UpdateTravelle
 	return
 }
 
-func (s Service) Delete(ctx context.Context, id int) (err error) {
+func (s *travellerService) Delete(ctx context.Context, id int) (err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.Delete",
 		attribute.Int("traveller.id", id),
 	)

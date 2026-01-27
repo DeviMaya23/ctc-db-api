@@ -17,7 +17,7 @@ import (
 type AccessoryServiceSuite struct {
 	suite.Suite
 	accessoryRepo *mocks.MockAccessoryRepository
-	svc           *Service
+	svc           *accessoryService
 }
 
 func TestAccessoryServiceSuite(t *testing.T) {

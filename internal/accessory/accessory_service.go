@@ -18,19 +18,19 @@ type AccessoryRepository interface {
 	Update(ctx context.Context, input *domain.Accessory) (err error)
 }
 
-type Service struct {
+type accessoryService struct {
 	accessoryRepo AccessoryRepository
 	logger        *logging.Logger
 }
 
-func NewAccessoryService(a AccessoryRepository, logger *logging.Logger) *Service {
-	return &Service{
+func NewAccessoryService(a AccessoryRepository, logger *logging.Logger) *accessoryService {
+	return &accessoryService{
 		accessoryRepo: a,
 		logger:        logger.Named("service.accessory"),
 	}
 }
 
-func (s Service) GetList(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.AccessoryListItemResponse], err error) {
+func (s *accessoryService) GetList(ctx context.Context, filter domain.ListAccessoryRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.AccessoryListItemResponse], err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.accessory", "AccessoryService.GetList",
 		attribute.Int("page", params.Page),
 		attribute.Int("page_size", params.PageSize),
