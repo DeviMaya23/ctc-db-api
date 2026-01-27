@@ -1,6 +1,9 @@
 package constants
 
 const (
+	// Date format constants
+	DateFormat = "02-01-2006"
+
 	InfluenceWealth    = "Wealth"
 	InfluencePower     = "Power"
 	InfluenceFame      = "Fame"

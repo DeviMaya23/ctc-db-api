@@ -7,7 +7,6 @@ import (
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -125,17 +124,14 @@ func (s *travellerService) Create(ctx context.Context, input domain.CreateTravel
 	)
 
 	// Parse release date
-	var releaseDate time.Time
-	if input.ReleaseDate != "" {
-		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
-		if err != nil {
-			s.logger.WithContext(ctx).Error("failed to parse release date",
-				zap.String("release_date", input.ReleaseDate),
-				zap.String("error.type", "parsing_error"),
-				zap.String("error.message", err.Error()),
-			)
-			return 0, err
-		}
+	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
+	if err != nil {
+		s.logger.WithContext(ctx).Error("failed to parse release date",
+			zap.String("release_date", input.ReleaseDate),
+			zap.String("error.type", "parsing_error"),
+			zap.String("error.message", err.Error()),
+		)
+		return 0, err
 	}
 
 	// Build traveller domain object
@@ -197,17 +193,14 @@ func (s *travellerService) Update(ctx context.Context, id int, input domain.Upda
 	)
 
 	// Parse release date
-	var releaseDate time.Time
-	if input.ReleaseDate != "" {
-		releaseDate, err = time.Parse("02-01-2006", input.ReleaseDate)
-		if err != nil {
-			s.logger.WithContext(ctx).Error("failed to parse release date",
-				zap.String("release_date", input.ReleaseDate),
-				zap.String("error.type", "parsing_error"),
-				zap.String("error.message", err.Error()),
-			)
-			return err
-		}
+	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
+	if err != nil {
+		s.logger.WithContext(ctx).Error("failed to parse release date",
+			zap.String("release_date", input.ReleaseDate),
+			zap.String("error.type", "parsing_error"),
+			zap.String("error.message", err.Error()),
+		)
+		return err
 	}
 
 	// Build traveller domain object
