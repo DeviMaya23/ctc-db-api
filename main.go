@@ -37,46 +37,77 @@ import (
 
 // @BasePath	/api/v1
 func main() {
-
-	err := godotenv.Load("config.env")
-	if err != nil {
+	// Load environment variables
+	if err := godotenv.Load("config.env"); err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 
 	// Initialize logger
 	env := helpers.EnvWithDefault("ENVIRONMENT", "development")
+	logger := initLogger(env)
+	defer logger.Sync()
+
+	// Initialize tracer
+	tracerProvider := initTracer(logger)
+	defer shutdownTracer(tracerProvider, logger)
+
+	// Initialize database
+	db, dbConn := initDatabase(logger)
+	defer closeDatabase(dbConn, logger)
+
+	// Initialize application
+	app := initApplication(db, logger)
+
+	// Start server
+	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
+	logger.Info("starting server",
+		zap.String("service.name", "ctc-db-api"),
+		zap.String("environment", env),
+		zap.String("address", addr),
+	)
+	app.Logger.Fatal(app.Start(addr))
+}
+
+func initLogger(env string) *logging.Logger {
 	logger, err := logging.NewLogger(env)
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
-	defer logger.Sync()
 	zap.ReplaceGlobals(logger.Logger)
 
 	logger.Info("logger initialized",
 		zap.String("service.name", "ctc-db-api"),
 		zap.String("environment", env),
 	)
+	return logger
+}
 
-	// Initialize OpenTelemetry tracer
+func initTracer(logger *logging.Logger) *telemetry.TracerProvider {
 	tracerProvider, err := telemetry.InitTracer(logger.Logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize tracer", zap.Error(err))
 	}
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := tracerProvider.Shutdown(ctx); err != nil {
-			logger.Error("Failed to shutdown tracer", zap.Error(err))
-		}
-	}()
+	return tracerProvider
+}
 
+func shutdownTracer(tracerProvider *telemetry.TracerProvider, logger *logging.Logger) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := tracerProvider.Shutdown(ctx); err != nil {
+		logger.Error("Failed to shutdown tracer", zap.Error(err))
+	}
+}
+
+func initDatabase(logger *logging.Logger) (*gorm.DB, *sql.DB) {
 	dbHost := os.Getenv("DATABASE_HOST")
 	dbPort := os.Getenv("DATABASE_PORT")
 	dbUser := os.Getenv("DATABASE_USER")
 	dbPass := os.Getenv("DATABASE_PASS")
 	dbName := os.Getenv("DATABASE_NAME")
 	dbSSLMode := helpers.EnvWithDefault("DATABASE_SSLMODE", "disable")
-	dsn := fmt.Sprintf("sslmode=%s host=%s port=%s user=%s password='%s' dbname=%s timezone=%s", dbSSLMode, dbHost, dbPort, dbUser, dbPass, dbName, "Asia/Jakarta")
+
+	dsn := fmt.Sprintf("sslmode=%s host=%s port=%s user=%s password='%s' dbname=%s timezone=%s",
+		dbSSLMode, dbHost, dbPort, dbUser, dbPass, dbName, "Asia/Jakarta")
 
 	dbConn, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -85,6 +116,7 @@ func main() {
 			zap.String("db.host", dbHost),
 			zap.String("db.port", dbPort))
 	}
+
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: dbConn,
 	}), &gorm.Config{
@@ -96,8 +128,7 @@ func main() {
 			zap.String("db.system", "postgres"))
 	}
 
-	err = dbConn.Ping()
-	if err != nil {
+	if err = dbConn.Ping(); err != nil {
 		logger.Fatal("Failed to ping database",
 			zap.Error(err),
 			zap.String("db.host", dbHost))
@@ -108,66 +139,68 @@ func main() {
 		zap.String("db.host", dbHost),
 	)
 
-	defer func() {
-		if err := dbConn.Close(); err != nil {
-			logger.Error("Failed to close database connection",
-				zap.Error(err))
-		}
-	}()
+	return db, dbConn
+}
 
-	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
+func closeDatabase(dbConn *sql.DB, logger *logging.Logger) {
+	if err := dbConn.Close(); err != nil {
+		logger.Error("Failed to close database connection", zap.Error(err))
+	}
+}
+
+func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 	e := echo.New()
 
-	// Add OTel tracing middleware FIRST (if enabled)
-	// Must run before RequestIDMiddleware so trace_id is in context
+	// Setup middleware
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
-
-	// Add request ID middleware
 	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
 
+	// Setup Swagger
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
-	// Validator
-	validator, err := validator.NewValidator()
+
+	// Setup validator
+	setupValidator(e, logger)
+
+	// Setup repositories, services, and handlers
+	setupRoutes(e, db, logger)
+
+	return e
+}
+
+func setupValidator(e *echo.Echo, logger *logging.Logger) {
+	v, err := validator.NewValidator()
 	if err != nil {
 		logger.Fatal("Failed to initialize validator", zap.Error(err))
 	}
-	e.Validator = validator
+	e.Validator = v
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			ctx.Set("validator", validator)
+			ctx.Set("validator", v)
 			return next(ctx)
 		}
 	})
+}
 
-	// Middleware
-	jwtMiddleware := pkgMiddleware.NewJWTMiddleware()
-
-	// Repository
+func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
+	// Initialize repositories
 	travellerRepo := postgresRepo.NewTravellerRepository(db, logger)
 	accessoryRepo := postgresRepo.NewAccessoryRepository(db, logger)
 	userRepo := postgresRepo.NewUserRepository(db, logger)
 
-	// Service
+	// Initialize services
 	travellerService := traveller.NewTravellerService(travellerRepo, logger)
 	userService := user.NewUserService(userRepo, logger)
 	accessoryService := accessory.NewAccessoryService(accessoryRepo, logger)
 
+	// Setup API group with optional JWT middleware
 	v1 := e.Group("/api/v1")
-	// JWT Middleware Flag
 	if helpers.EnvWithDefaultBool("AUTH_IS_ENABLED", false) {
+		jwtMiddleware := pkgMiddleware.NewJWTMiddleware()
 		v1.Use(jwtMiddleware)
 	}
 
-	// Handler
+	// Register handlers
 	rest.NewTravellerHandler(v1, travellerService)
 	rest.NewUserHandler(v1, userService)
 	rest.NewAccessoryHandler(v1, accessoryService)
-
-	logger.Info("starting server",
-		zap.String("service.name", "ctc-db-api"),
-		zap.String("environment", env),
-		zap.String("address", addr),
-	)
-
-	e.Logger.Fatal(e.Start(addr))
 }

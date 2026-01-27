@@ -33,7 +33,7 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 
 	err := ctx.Bind(&request)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&request)
