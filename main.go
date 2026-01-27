@@ -13,6 +13,7 @@ import (
 	postgresRepo "lizobly/ctc-db-api/internal/repository/postgres"
 	"lizobly/ctc-db-api/internal/rest"
 	"lizobly/ctc-db-api/pkg/helpers"
+	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
 	pkgMiddleware "lizobly/ctc-db-api/pkg/middleware"
 	"lizobly/ctc-db-api/pkg/telemetry"
@@ -182,6 +183,20 @@ func setupValidator(e *echo.Echo, logger *logging.Logger) {
 }
 
 func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
+	// Initialize token service
+	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if jwtSecretKey == "" {
+		logger.Fatal("JWT_SECRET_KEY environment variable must be set")
+	}
+	jwtTimeoutStr := helpers.EnvWithDefault("JWT_TIMEOUT", "10m")
+	jwtTimeout, err := time.ParseDuration(jwtTimeoutStr)
+	if err != nil {
+		logger.Fatal("Invalid JWT_TIMEOUT format",
+			zap.String("jwt.timeout", jwtTimeoutStr),
+			zap.Error(err))
+	}
+	tokenService := pkgJWT.NewTokenService(jwtSecretKey, jwtTimeout, logger)
+
 	// Initialize repositories
 	travellerRepo := postgresRepo.NewTravellerRepository(db, logger)
 	accessoryRepo := postgresRepo.NewAccessoryRepository(db, logger)
@@ -189,7 +204,7 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 
 	// Initialize services
 	travellerService := traveller.NewTravellerService(travellerRepo, logger)
-	userService := user.NewUserService(userRepo, logger)
+	userService := user.NewUserService(userRepo, tokenService, logger)
 	accessoryService := accessory.NewAccessoryService(accessoryRepo, logger)
 
 	// Setup API group with optional JWT middleware
