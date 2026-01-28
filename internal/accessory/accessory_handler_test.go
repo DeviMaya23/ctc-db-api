@@ -206,9 +206,8 @@ func (s *AccessoryHandlerSuite) TestAccessoryHandler_GetList() {
 				queryParams: map[string]string{},
 			},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error get data",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},

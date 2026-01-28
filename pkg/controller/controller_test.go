@@ -78,26 +78,22 @@ func TestResponseErrorValidation_GoPlaygroundValidator(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
 			// Parse response
-			var response StandardAPIResponse
+			var response ErrorResponse
 			err = json.Unmarshal(rec.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			assert.Equal(t, "error validation", response.Message)
+			assert.Equal(t, "validation failed", response.Message)
 
 			// Check that errors is an array
-			errorsArray, ok := response.Errors.([]interface{})
-			require.True(t, ok, "errors should be an array")
-			assert.Len(t, errorsArray, len(tt.expectedFields))
+			assert.Len(t, response.Errors, len(tt.expectedFields))
 
 			// Verify fields are present
 			for _, expectedField := range tt.expectedFields {
 				found := false
-				for _, errInterface := range errorsArray {
-					errMap, ok := errInterface.(map[string]interface{})
-					require.True(t, ok)
-					if errMap["field"] == expectedField {
+				for _, fieldErr := range response.Errors {
+					if fieldErr.Field == expectedField {
 						found = true
-						assert.NotEmpty(t, errMap["message"])
+						assert.NotEmpty(t, fieldErr.Message)
 						break
 					}
 				}
@@ -140,22 +136,17 @@ func TestResponseErrorValidation_DomainSingleFieldError(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
 			// Parse response
-			var response StandardAPIResponse
+			var response ErrorResponse
 			err := json.Unmarshal(rec.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			assert.Equal(t, "error validation", response.Message)
+			assert.Equal(t, "validation failed", response.Message)
 
 			// Check errors array
-			errorsArray, ok := response.Errors.([]interface{})
-			require.True(t, ok, "errors should be an array")
-			require.Len(t, errorsArray, 1)
+			require.Len(t, response.Errors, 1)
 
-			errMap, ok := errorsArray[0].(map[string]interface{})
-			require.True(t, ok)
-
-			assert.Equal(t, tt.expectedField, errMap["field"])
-			assert.Equal(t, tt.expectedMsg, errMap["message"])
+			assert.Equal(t, tt.expectedField, response.Errors[0].Field)
+			assert.Equal(t, tt.expectedMsg, response.Errors[0].Message)
 		})
 	}
 }
@@ -166,7 +157,7 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 	tests := []struct {
 		name           string
 		err            error
-		expectedErrors []ValidationErrorFields
+		expectedErrors []FieldError
 		expectedStatus int
 	}{
 		{
@@ -176,7 +167,7 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 				{Field: "password", Message: "must be at least 8 characters"},
 				{Field: "username", Message: "is required"},
 			}),
-			expectedErrors: []ValidationErrorFields{
+			expectedErrors: []FieldError{
 				{Field: "email", Message: "must be a valid email"},
 				{Field: "password", Message: "must be at least 8 characters"},
 				{Field: "username", Message: "is required"},
@@ -188,7 +179,7 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 			err: domain.NewValidationError([]domain.FieldError{
 				{Field: "email", Message: "invalid format"},
 			}),
-			expectedErrors: []ValidationErrorFields{
+			expectedErrors: []FieldError{
 				{Field: "email", Message: "invalid format"},
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -209,23 +200,19 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
 			// Parse response
-			var response StandardAPIResponse
+			var response ErrorResponse
 			err := json.Unmarshal(rec.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			assert.Equal(t, "error validation", response.Message)
+			assert.Equal(t, "validation failed", response.Message)
 
 			// Check errors array
-			errorsArray, ok := response.Errors.([]interface{})
-			require.True(t, ok, "errors should be an array")
-			require.Len(t, errorsArray, len(tt.expectedErrors))
+			require.Len(t, response.Errors, len(tt.expectedErrors))
 
 			// Verify each error field and message
 			for i, expectedErr := range tt.expectedErrors {
-				errMap, ok := errorsArray[i].(map[string]interface{})
-				require.True(t, ok)
-				assert.Equal(t, expectedErr.Field, errMap["field"])
-				assert.Equal(t, expectedErr.Message, errMap["message"])
+				assert.Equal(t, expectedErr.Field, response.Errors[i].Field)
+				assert.Equal(t, expectedErr.Message, response.Errors[i].Message)
 			}
 		})
 	}
@@ -249,14 +236,12 @@ func TestResponseErrorValidation_AddFieldErrorHelper(t *testing.T) {
 		require.NoError(t, responseErr)
 
 		// Parse response
-		var response StandardAPIResponse
+		var response ErrorResponse
 		err := json.Unmarshal(rec.Body.Bytes(), &response)
 		require.NoError(t, err)
 
 		// Check all three errors are present
-		errorsArray, ok := response.Errors.([]interface{})
-		require.True(t, ok)
-		require.Len(t, errorsArray, 3)
+		require.Len(t, response.Errors, 3)
 
 		expectedErrors := map[string]string{
 			"email":    "must be a valid email",
@@ -264,15 +249,10 @@ func TestResponseErrorValidation_AddFieldErrorHelper(t *testing.T) {
 			"username": "already exists",
 		}
 
-		for _, errInterface := range errorsArray {
-			errMap, ok := errInterface.(map[string]interface{})
-			require.True(t, ok)
-			field := errMap["field"].(string)
-			message := errMap["message"].(string)
-
-			expectedMsg, found := expectedErrors[field]
-			assert.True(t, found, "unexpected field: %s", field)
-			assert.Equal(t, expectedMsg, message)
+		for _, fieldErr := range response.Errors {
+			expectedMsg, found := expectedErrors[fieldErr.Field]
+			assert.True(t, found, "unexpected field: %s", fieldErr.Field)
+			assert.Equal(t, expectedMsg, fieldErr.Message)
 		}
 	})
 }
@@ -294,21 +274,17 @@ func TestResponseErrorValidation_FallbackUnknownError(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
 		// Parse response
-		var response StandardAPIResponse
+		var response ErrorResponse
 		err := json.Unmarshal(rec.Body.Bytes(), &response)
 		require.NoError(t, err)
 
-		assert.Equal(t, "error validation", response.Message)
+		assert.Equal(t, "validation failed", response.Message)
 
 		// Check error is wrapped in general field
-		errorsArray, ok := response.Errors.([]interface{})
-		require.True(t, ok)
-		require.Len(t, errorsArray, 1)
+		require.Len(t, response.Errors, 1)
 
-		errMap, ok := errorsArray[0].(map[string]interface{})
-		require.True(t, ok)
-		assert.Equal(t, "general", errMap["field"])
-		assert.Equal(t, "some unexpected error", errMap["message"])
+		assert.Equal(t, "general", response.Errors[0].Field)
+		assert.Equal(t, "some unexpected error", response.Errors[0].Message)
 	})
 }
 
@@ -327,7 +303,7 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 			err:            domain.NewValidationError([]domain.FieldError{{Field: "email", Message: "invalid email format"}}),
 			operation:      "create user",
 			expectedStatus: http.StatusBadRequest,
-			expectedMsg:    "error validation",
+			expectedMsg:    "validation failed",
 		},
 		{
 			name: "multi field validation error from service",
@@ -337,7 +313,7 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 			}),
 			operation:      "update user",
 			expectedStatus: http.StatusBadRequest,
-			expectedMsg:    "error validation",
+			expectedMsg:    "validation failed",
 		},
 	}
 
@@ -355,16 +331,14 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
 			// Parse response
-			var response StandardAPIResponse
+			var response ErrorResponse
 			err := json.Unmarshal(rec.Body.Bytes(), &response)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedMsg, response.Message)
 
 			// Verify errors array exists and is not empty
-			errorsArray, ok := response.Errors.([]interface{})
-			require.True(t, ok, "errors should be an array")
-			assert.NotEmpty(t, errorsArray)
+			assert.NotEmpty(t, response.Errors)
 		})
 	}
 }

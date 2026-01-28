@@ -50,7 +50,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListAccessoryRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	err = ctx.Validate(&filter)
@@ -61,7 +61,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var params helpers.PaginationParams
 	err = ctx.Bind(&params)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid pagination parameters")
 	}
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
@@ -72,5 +72,5 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	// Set cache headers for list responses
 	helpers.SetListCacheHeaders(ctx)
 
-	return controller.Ok(ctx, "success", result, nil)
+	return controller.Ok(ctx, result)
 }

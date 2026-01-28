@@ -77,9 +77,8 @@ func (s *UserHandlerSuite) TestUserHandler_Login() {
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: controller.StandardAPIResponse{
-					Message: "success",
-					Data:    resp,
+				responseBody: controller.DataResponse[domain.LoginResponse]{
+					Data: resp,
 				},
 				statusCode: http.StatusOK,
 			},
@@ -107,9 +106,8 @@ func (s *UserHandlerSuite) TestUserHandler_Login() {
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: controller.StandardAPIResponse{
-					Message: "error login",
-					Errors:  "invalid credentials",
+				responseBody: controller.ErrorResponse{
+					Message: "invalid credentials",
 				},
 				statusCode: http.StatusUnauthorized,
 			},
@@ -123,9 +121,8 @@ func (s *UserHandlerSuite) TestUserHandler_Login() {
 			args: args{login},
 			want: want{
 				loginResponse: resp,
-				responseBody: controller.StandardAPIResponse{
-					Message: "error login",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},

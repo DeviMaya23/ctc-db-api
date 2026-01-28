@@ -59,7 +59,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListTravellerRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	err = ctx.Validate(&filter)
@@ -70,7 +70,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	var params helpers.PaginationParams
 	err = ctx.Bind(&params)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid pagination parameters")
 	}
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
@@ -81,7 +81,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	// Set cache headers for list responses
 	helpers.SetListCacheHeaders(ctx)
 
-	return controller.Ok(ctx, "success", result, nil)
+	return controller.Ok(ctx, result)
 }
 
 // GetByID godoc
@@ -100,7 +100,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid id parameter")
 	}
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
@@ -114,7 +114,7 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	}
 
 	response := domain.ToTravellerResponse(traveller)
-	return controller.Ok(ctx, "success", response, nil)
+	return controller.Ok(ctx, response)
 }
 
 func (h *TravellerHandler) Create(ctx echo.Context) error {
@@ -122,7 +122,7 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 	var newTraveller domain.CreateTravellerRequest
 	err := ctx.Bind(&newTraveller)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	err = ctx.Validate(&newTraveller)
@@ -146,13 +146,13 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	location := "/api/v1/travellers/" + strconv.FormatInt(id, 10)
 	response := domain.ToTravellerResponse(traveller)
-	return controller.Created(ctx, "success", response, location)
+	return controller.Created(ctx, response, location)
 }
 
 func (h *TravellerHandler) Update(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid id parameter")
 	}
 
 	// Check for optimistic locking with If-Match header
@@ -172,7 +172,7 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 	var updateRequest domain.UpdateTravellerRequest
 	err = ctx.Bind(&updateRequest)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	err = ctx.Validate(&updateRequest)
@@ -195,13 +195,13 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
 
 	response := domain.ToTravellerResponse(traveller)
-	return controller.Ok(ctx, "success", response, nil)
+	return controller.Ok(ctx, response)
 }
 
 func (h *TravellerHandler) Delete(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", "id not found")
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid id parameter")
 	}
 
 	err = h.Service.Delete(ctx.Request().Context(), id)
