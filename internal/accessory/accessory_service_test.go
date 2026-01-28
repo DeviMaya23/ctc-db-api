@@ -80,7 +80,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 					1: "Fiore",
 					2: "Viola",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 1},
 						Name:        "Sword",
@@ -112,7 +112,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 				ownerNames := map[int64]string{
 					1: "Fiore",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 1},
 						Name:        "Sword",
@@ -139,7 +139,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 				ownerNames := map[int64]string{
 					1: "Fiore",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 1},
 						Name:        "Sword",
@@ -170,7 +170,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 					1: "Fiore",
 					2: "Viola",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 1},
 						Name:        "Sword",
@@ -211,7 +211,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 					1: "Fiore",
 					2: "Viola",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 2},
 						Name:        "Shield",
@@ -246,9 +246,9 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				ownerNames := make(map[int64]string)
-				accessories := make([]domain.Accessory, 10)
+				accessories := make([]*domain.Accessory, 10)
 				for i := 0; i < 10; i++ {
-					accessories[i] = domain.Accessory{
+					accessories[i] = &domain.Accessory{
 						CommonModel: domain.CommonModel{ID: int64(i + 1)},
 						Name:        "Accessory",
 						Effect:      "Effect",
@@ -274,9 +274,9 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				ownerNames := make(map[int64]string)
-				accessories := make([]domain.Accessory, 10)
+				accessories := make([]*domain.Accessory, 10)
 				for i := 0; i < 10; i++ {
-					accessories[i] = domain.Accessory{
+					accessories[i] = &domain.Accessory{
 						CommonModel: domain.CommonModel{ID: int64(i + 11)},
 						Name:        "Accessory",
 						Effect:      "Effect",
@@ -301,7 +301,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				accessories := []domain.Accessory{}
+				accessories := []*domain.Accessory{}
 				ownerNames := map[int64]string{}
 				s.accessoryRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(accessories, ownerNames, want.total, want.err).Once()
 			},
@@ -345,7 +345,7 @@ func (s *AccessoryServiceSuite) TestAccessoryService_GetList() {
 				ownerNames := map[int64]string{
 					1: "Fiore",
 				}
-				accessories := []domain.Accessory{
+				accessories := []*domain.Accessory{
 					{
 						CommonModel: domain.CommonModel{ID: 1},
 						Name:        "Sword",

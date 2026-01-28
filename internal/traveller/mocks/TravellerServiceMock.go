@@ -163,22 +163,24 @@ func (_c *MockTravellerService_Delete_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // GetByID provides a mock function for the type MockTravellerService
-func (_mock *MockTravellerService) GetByID(ctx context.Context, id int) (domain.Traveller, error) {
+func (_mock *MockTravellerService) GetByID(ctx context.Context, id int) (*domain.Traveller, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByID")
 	}
 
-	var r0 domain.Traveller
+	var r0 *domain.Traveller
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (domain.Traveller, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (*domain.Traveller, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) domain.Traveller); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) *domain.Traveller); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
-		r0 = ret.Get(0).(domain.Traveller)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Traveller)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
 		r1 = returnFunc(ctx, id)
@@ -218,12 +220,12 @@ func (_c *MockTravellerService_GetByID_Call) Run(run func(ctx context.Context, i
 	return _c
 }
 
-func (_c *MockTravellerService_GetByID_Call) Return(res domain.Traveller, err error) *MockTravellerService_GetByID_Call {
+func (_c *MockTravellerService_GetByID_Call) Return(res *domain.Traveller, err error) *MockTravellerService_GetByID_Call {
 	_c.Call.Return(res, err)
 	return _c
 }
 
-func (_c *MockTravellerService_GetByID_Call) RunAndReturn(run func(ctx context.Context, id int) (domain.Traveller, error)) *MockTravellerService_GetByID_Call {
+func (_c *MockTravellerService_GetByID_Call) RunAndReturn(run func(ctx context.Context, id int) (*domain.Traveller, error)) *MockTravellerService_GetByID_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -39,22 +39,24 @@ func (_m *MockUserRepository) EXPECT() *MockUserRepository_Expecter {
 }
 
 // GetByUsername provides a mock function for the type MockUserRepository
-func (_mock *MockUserRepository) GetByUsername(ctx context.Context, username string) (domain.User, error) {
+func (_mock *MockUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	ret := _mock.Called(ctx, username)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByUsername")
 	}
 
-	var r0 domain.User
+	var r0 *domain.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (domain.User, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domain.User, error)); ok {
 		return returnFunc(ctx, username)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) domain.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domain.User); ok {
 		r0 = returnFunc(ctx, username)
 	} else {
-		r0 = ret.Get(0).(domain.User)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.User)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(ctx, username)
@@ -94,12 +96,12 @@ func (_c *MockUserRepository_GetByUsername_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockUserRepository_GetByUsername_Call) Return(result domain.User, err error) *MockUserRepository_GetByUsername_Call {
+func (_c *MockUserRepository_GetByUsername_Call) Return(result *domain.User, err error) *MockUserRepository_GetByUsername_Call {
 	_c.Call.Return(result, err)
 	return _c
 }
 
-func (_c *MockUserRepository_GetByUsername_Call) RunAndReturn(run func(ctx context.Context, username string) (domain.User, error)) *MockUserRepository_GetByUsername_Call {
+func (_c *MockUserRepository_GetByUsername_Call) RunAndReturn(run func(ctx context.Context, username string) (*domain.User, error)) *MockUserRepository_GetByUsername_Call {
 	_c.Call.Return(run)
 	return _c
 }

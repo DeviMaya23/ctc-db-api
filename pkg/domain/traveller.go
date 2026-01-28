@@ -76,7 +76,7 @@ type TravellerResponse struct {
 
 // Mapper functions
 
-func ToTravellerListItemResponse(traveller Traveller) TravellerListItemResponse {
+func ToTravellerListItemResponse(traveller *Traveller) TravellerListItemResponse {
 	return TravellerListItemResponse{
 		Name:        traveller.Name,
 		Rarity:      traveller.Rarity,
@@ -87,7 +87,7 @@ func ToTravellerListItemResponse(traveller Traveller) TravellerListItemResponse 
 	}
 }
 
-func ToTravellerResponse(traveller Traveller) TravellerResponse {
+func ToTravellerResponse(traveller *Traveller) TravellerResponse {
 	return TravellerResponse{
 		Name:        traveller.Name,
 		Rarity:      traveller.Rarity,

@@ -104,7 +104,7 @@ func ToAccessoryResponse(accessory *Accessory) *AccessoryResponse {
 	}
 }
 
-func ToAccessoryListItemResponse(accessory Accessory, ownerNames map[int64]string) AccessoryListItemResponse {
+func ToAccessoryListItemResponse(accessory *Accessory, ownerNames map[int64]string) AccessoryListItemResponse {
 	return AccessoryListItemResponse{
 		Name:   accessory.Name,
 		HP:     accessory.HP,

@@ -103,7 +103,7 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 	return
 }
 
-func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []domain.Accessory, ownerNames map[int64]string, total int64, err error) {
+func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []*domain.Accessory, ownerNames map[int64]string, total int64, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.GetList", "select", "m_accessory")
 	defer telemetry.EndSpanWithError(span, err)
 
@@ -150,10 +150,10 @@ func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAcc
 	}
 
 	// Separate accessories and traveller names from the result
-	result = make([]domain.Accessory, len(rows))
+	result = make([]*domain.Accessory, len(rows))
 	ownerNames = make(map[int64]string)
 	for i, row := range rows {
-		result[i] = row.Accessory
+		result[i] = &row.Accessory
 		if row.Owner != "" {
 			ownerNames[row.Accessory.ID] = row.Owner
 		}

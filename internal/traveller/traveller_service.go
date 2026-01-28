@@ -13,8 +13,8 @@ import (
 )
 
 type TravellerRepository interface {
-	GetByID(ctx context.Context, id int) (result domain.Traveller, err error)
-	GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error)
+	GetByID(ctx context.Context, id int) (result *domain.Traveller, err error)
+	GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []*domain.Traveller, total int64, err error)
 	Create(ctx context.Context, input *domain.Traveller) (err error)
 	Update(ctx context.Context, input *domain.Traveller) (err error)
 	Delete(ctx context.Context, id int) (err error)
@@ -34,7 +34,7 @@ func NewTravellerService(t TravellerRepository, logger *logging.Logger) *travell
 	}
 }
 
-func (s *travellerService) GetByID(ctx context.Context, id int) (res domain.Traveller, err error) {
+func (s *travellerService) GetByID(ctx context.Context, id int) (res *domain.Traveller, err error) {
 	ctx, span := telemetry.StartServiceSpan(ctx, "service.traveller", "TravellerService.GetByID",
 		attribute.Int("traveller.id", id),
 	)

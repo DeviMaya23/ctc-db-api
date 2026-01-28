@@ -61,7 +61,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 		request domain.LoginRequest
 	}
 	type want struct {
-		user domain.User
+		user *domain.User
 		// response  domain.LoginResponse
 		err error
 	}
@@ -79,7 +79,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 				Password: "password",
 			}},
 			want: want{
-				user: domain.User{
+				user: &domain.User{
 					Username: "isla",
 					Password: string(bcryptedPassword),
 				},

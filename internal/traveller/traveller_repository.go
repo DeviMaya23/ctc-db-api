@@ -24,7 +24,7 @@ func NewTravellerRepository(db *gorm.DB, logger *logging.Logger) *travellerRepos
 		logger: logger.Named("repository.traveller"),
 	}
 }
-func (r *travellerRepository) GetByID(ctx context.Context, id int) (result domain.Traveller, err error) {
+func (r *travellerRepository) GetByID(ctx context.Context, id int) (result *domain.Traveller, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetByID", "select", "m_traveller",
 		attribute.Int("traveller.id", id),
 	)
@@ -32,7 +32,8 @@ func (r *travellerRepository) GetByID(ctx context.Context, id int) (result domai
 
 	start := time.Now()
 
-	err = r.db.WithContext(ctx).Preload("Accessory").First(&result, "id = ?", id).Error
+	result = &domain.Traveller{}
+	err = r.db.WithContext(ctx).Preload("Accessory").First(result, "id = ?", id).Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
@@ -44,7 +45,7 @@ func (r *travellerRepository) GetByID(ctx context.Context, id int) (result domai
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			r.logger.WithContext(ctx).Warn("traveller not found", logFields...)
-			return result, domain.NewNotFoundError("traveller", id)
+			return nil, domain.NewNotFoundError("traveller", id)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to get traveller", logFields...)
@@ -60,7 +61,7 @@ func (r *travellerRepository) GetByID(ctx context.Context, id int) (result domai
 	return
 }
 
-func (r *travellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []domain.Traveller, total int64, err error) {
+func (r *travellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset, limit int) (result []*domain.Traveller, total int64, err error) {
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.traveller", "TravellerRepository.GetList", "select", "m_traveller")
 	defer telemetry.EndSpanWithError(span, err)
 

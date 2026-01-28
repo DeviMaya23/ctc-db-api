@@ -25,7 +25,7 @@ func NewUserRepository(db *gorm.DB, logger *logging.Logger) *userRepository {
 	}
 }
 
-func (r *userRepository) GetByUsername(ctx context.Context, username string) (result domain.User, err error) {
+func (r *userRepository) GetByUsername(ctx context.Context, username string) (result *domain.User, err error) {
 	// Start database span
 	ctx, span := telemetry.StartDBSpan(ctx, "repository.user", "UserRepository.GetByUsername", "select", "m_user",
 		attribute.String("user.username", username),
@@ -34,7 +34,8 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (re
 
 	start := time.Now()
 
-	err = r.db.WithContext(ctx).First(&result, "username = ?", username).Error
+	result = &domain.User{}
+	err = r.db.WithContext(ctx).First(result, "username = ?", username).Error
 
 	duration := time.Since(start)
 	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
@@ -46,7 +47,7 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (re
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			r.logger.WithContext(ctx).Warn("user not found", logFields...)
-			return result, domain.NewNotFoundError("user", username)
+			return nil, domain.NewNotFoundError("user", username)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
 		r.logger.WithContext(ctx).Error("failed to get user", logFields...)

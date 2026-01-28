@@ -56,12 +56,12 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 		pathID string
 	}
 	type want struct {
-		traveller    domain.Traveller
+		traveller    *domain.Traveller
 		responseBody interface{}
 		statusCode   int
 	}
 
-	traveller := domain.Traveller{}
+	traveller := &domain.Traveller{}
 
 	tests := []struct {
 		name       string
@@ -158,7 +158,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 		Job:       "Warrior",
 	}
 
-	createdTraveller := domain.Traveller{
+	createdTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
 		Rarity:      5,
@@ -263,7 +263,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		Job:       constants.JobMerchant,
 	}
 
-	updatedTraveller := domain.Traveller{
+	updatedTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
 		Rarity:      6,

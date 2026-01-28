@@ -13,7 +13,7 @@ import (
 )
 
 type AccessoryRepository interface {
-	GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []domain.Accessory, ownerNames map[int64]string, total int64, err error)
+	GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []*domain.Accessory, ownerNames map[int64]string, total int64, err error)
 	Create(ctx context.Context, input *domain.Accessory) (err error)
 	Update(ctx context.Context, input *domain.Accessory) (err error)
 }

@@ -13,7 +13,7 @@ import (
 )
 
 type UserRepository interface {
-	GetByUsername(ctx context.Context, username string) (result domain.User, err error)
+	GetByUsername(ctx context.Context, username string) (result *domain.User, err error)
 }
 
 type TokenService interface {
@@ -51,7 +51,7 @@ func (s *userService) Login(ctx context.Context, req domain.LoginRequest) (res d
 	passwordHash := dummyHash
 	userFound := true
 
-	if err != nil {
+	if err != nil || user == nil {
 		userFound = false
 	} else {
 		passwordHash = user.Password

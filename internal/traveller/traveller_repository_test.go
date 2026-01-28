@@ -42,7 +42,7 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 		name    string
 		id      int
 		mockSet func()
-		want    domain.Traveller
+		want    *domain.Traveller
 		wantErr bool
 		checkFn func(*testing.T, error)
 	}{
@@ -55,9 +55,9 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 				s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_traveller" WHERE id = $1 AND "m_traveller"."deleted_at" IS NULL ORDER BY "m_traveller"."id" LIMIT $2`)).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "name", "rarity", "banner", "release_date"}).AddRow(1, want.Name, want.Rarity, want.Banner, want.ReleaseDate))
 			},
-			want: func() domain.Traveller {
+			want: func() *domain.Traveller {
 				releaseDate := time.Date(2023, 5, 15, 0, 0, 0, 0, time.UTC)
-				return domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
+				return &domain.Traveller{Name: "Fiore", Rarity: 5, Banner: "General", ReleaseDate: releaseDate, CommonModel: domain.CommonModel{ID: int64(1)}}
 			}(),
 			wantErr: false,
 		},

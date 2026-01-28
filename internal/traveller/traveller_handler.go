@@ -13,7 +13,7 @@ import (
 )
 
 type TravellerService interface {
-	GetByID(ctx context.Context, id int) (res domain.Traveller, err error)
+	GetByID(ctx context.Context, id int) (res *domain.Traveller, err error)
 	GetList(ctx context.Context, filter domain.ListTravellerRequest, params helpers.PaginationParams) (res helpers.PaginatedResponse[domain.TravellerListItemResponse], err error)
 	Create(ctx context.Context, input domain.CreateTravellerRequest) (id int64, err error)
 	Update(ctx context.Context, id int, input domain.UpdateTravellerRequest) (err error)
@@ -109,6 +109,10 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 		return h.HandleServiceError(ctx, err, "get data")
 	}
 
+	if traveller == nil {
+		return h.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get data")
+	}
+
 	// Set cache headers and check if client has valid cached version
 	if helpers.SetCacheHeaders(ctx, traveller.ETag(), traveller.LastModified(), constants.CacheMaxAgeResource) {
 		return helpers.RespondNotModified(ctx)
@@ -141,6 +145,10 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 		return h.HandleServiceError(ctx, err, "get created data")
 	}
 
+	if traveller == nil {
+		return h.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get created data")
+	}
+
 	// Set ETag and Last-Modified for created resource
 	ctx.Response().Header().Set("ETag", traveller.ETag())
 	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
@@ -162,6 +170,10 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 		currentTraveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
 			return h.HandleServiceError(ctx, err, "get data")
+		}
+
+		if currentTraveller == nil {
+			return h.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get data")
 		}
 
 		// Prevent lost updates - resource was modified
