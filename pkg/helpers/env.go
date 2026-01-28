@@ -3,7 +3,6 @@ package helpers
 import (
 	"os"
 	"strconv"
-	"strings"
 )
 
 func EnvWithDefault(key, defaultValue string) string {
@@ -16,13 +15,16 @@ func EnvWithDefault(key, defaultValue string) string {
 }
 
 func EnvWithDefaultBool(key string, defaultValue bool) bool {
-
 	strVal := os.Getenv(key)
 	if strVal == "" {
 		return defaultValue
 	}
 
-	return strings.EqualFold(strVal, "true")
+	val, err := strconv.ParseBool(strVal)
+	if err != nil {
+		return defaultValue
+	}
+	return val
 }
 
 // EnvWithDefaultFloat returns float64 from env or default

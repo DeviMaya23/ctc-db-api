@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
@@ -42,6 +43,7 @@ func TestUserRepository_Integration(t *testing.T) {
 
 	// not found
 	user, err = repo.GetByUsername(ctx, "klins")
-	assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError but got: %v", err)
+	var nfe *domain.NotFoundError
+	assert.True(t, errors.As(err, &nfe), "expected NotFoundError but got: %v", err)
 
 }

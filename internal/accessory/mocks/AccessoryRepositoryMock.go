@@ -96,25 +96,25 @@ func (_c *MockAccessoryRepository_Create_Call) RunAndReturn(run func(ctx context
 }
 
 // GetList provides a mock function for the type MockAccessoryRepository
-func (_mock *MockAccessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset int, limit int) ([]domain.Accessory, map[int64]string, int64, error) {
+func (_mock *MockAccessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset int, limit int) ([]*domain.Accessory, map[int64]string, int64, error) {
 	ret := _mock.Called(ctx, filter, offset, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetList")
 	}
 
-	var r0 []domain.Accessory
+	var r0 []*domain.Accessory
 	var r1 map[int64]string
 	var r2 int64
 	var r3 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, int, int) ([]domain.Accessory, map[int64]string, int64, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, int, int) ([]*domain.Accessory, map[int64]string, int64, error)); ok {
 		return returnFunc(ctx, filter, offset, limit)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, int, int) []domain.Accessory); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListAccessoryRequest, int, int) []*domain.Accessory); ok {
 		r0 = returnFunc(ctx, filter, offset, limit)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.Accessory)
+			r0 = ret.Get(0).([]*domain.Accessory)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ListAccessoryRequest, int, int) map[int64]string); ok {
@@ -179,12 +179,12 @@ func (_c *MockAccessoryRepository_GetList_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockAccessoryRepository_GetList_Call) Return(result []domain.Accessory, ownerNames map[int64]string, total int64, err error) *MockAccessoryRepository_GetList_Call {
+func (_c *MockAccessoryRepository_GetList_Call) Return(result []*domain.Accessory, ownerNames map[int64]string, total int64, err error) *MockAccessoryRepository_GetList_Call {
 	_c.Call.Return(result, ownerNames, total, err)
 	return _c
 }
 
-func (_c *MockAccessoryRepository_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListAccessoryRequest, offset int, limit int) ([]domain.Accessory, map[int64]string, int64, error)) *MockAccessoryRepository_GetList_Call {
+func (_c *MockAccessoryRepository_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListAccessoryRequest, offset int, limit int) ([]*domain.Accessory, map[int64]string, int64, error)) *MockAccessoryRepository_GetList_Call {
 	_c.Call.Return(run)
 	return _c
 }

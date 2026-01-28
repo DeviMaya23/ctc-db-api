@@ -39,7 +39,7 @@ func (s *UserRepositorySuite) SetupTest() {
 func (s *UserRepositorySuite) TestUserRepository_GetByUsername() {
 
 	username := "uname"
-	want := domain.User{Username: username}
+	want := &domain.User{Username: username}
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "m_user" WHERE username = $1 AND "m_user"."deleted_at" IS NULL ORDER BY "m_user"."id" LIMIT $2`)).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).

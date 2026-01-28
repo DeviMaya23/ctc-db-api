@@ -56,12 +56,12 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 		pathID string
 	}
 	type want struct {
-		traveller    domain.Traveller
+		traveller    *domain.Traveller
 		responseBody interface{}
 		statusCode   int
 	}
 
-	traveller := domain.Traveller{}
+	traveller := &domain.Traveller{}
 
 	tests := []struct {
 		name       string
@@ -158,7 +158,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 		Job:       "Warrior",
 	}
 
-	createdTraveller := domain.Traveller{
+	createdTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
 		Rarity:      5,
@@ -209,7 +209,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			want: want{
 				responseBody: controller.StandardAPIResponse{
 					Message: "error create data",
-					Errors:  gorm.ErrInvalidDB.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -263,7 +263,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 		Job:       constants.JobMerchant,
 	}
 
-	updatedTraveller := domain.Traveller{
+	updatedTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
 		Rarity:      6,
@@ -332,7 +332,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			want: want{
 				responseBody: controller.StandardAPIResponse{
 					Message: "error update data",
-					Errors:  gorm.ErrInvalidDB.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -420,7 +420,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			want: want{
 				responseBody: controller.StandardAPIResponse{
 					Message: "error delete data",
-					Errors:  gorm.ErrInvalidDB.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -564,7 +564,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetList() {
 			want: want{
 				responseBody: controller.StandardAPIResponse{
 					Message: "error get data",
-					Errors:  gorm.ErrInvalidDB.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},

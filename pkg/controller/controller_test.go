@@ -26,7 +26,6 @@ func setupTestEcho() *echo.Echo {
 func TestResponseErrorValidation_GoPlaygroundValidator(t *testing.T) {
 	t.Skip("Skipping go-playground validator test - requires full Echo middleware setup")
 	e := setupTestEcho()
-	controller := Controller{}
 
 	// Create a sample struct for validation
 	type TestRequest struct {
@@ -72,7 +71,7 @@ func TestResponseErrorValidation_GoPlaygroundValidator(t *testing.T) {
 			require.Error(t, err)
 
 			// Call ResponseErrorValidation with validation error
-			responseErr := controller.ResponseErrorValidation(ctx, err)
+			responseErr := ResponseErrorValidation(ctx, err)
 			require.NoError(t, responseErr)
 
 			// Check HTTP status
@@ -110,7 +109,6 @@ func TestResponseErrorValidation_GoPlaygroundValidator(t *testing.T) {
 
 func TestResponseErrorValidation_DomainSingleFieldError(t *testing.T) {
 	e := setupTestEcho()
-	controller := Controller{}
 
 	tests := []struct {
 		name           string
@@ -135,7 +133,7 @@ func TestResponseErrorValidation_DomainSingleFieldError(t *testing.T) {
 			ctx := e.NewContext(req, rec)
 
 			// Call ResponseErrorValidation with domain error
-			responseErr := controller.ResponseErrorValidation(ctx, tt.err)
+			responseErr := ResponseErrorValidation(ctx, tt.err)
 			require.NoError(t, responseErr)
 
 			// Check HTTP status
@@ -164,7 +162,6 @@ func TestResponseErrorValidation_DomainSingleFieldError(t *testing.T) {
 
 func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 	e := setupTestEcho()
-	controller := Controller{}
 
 	tests := []struct {
 		name           string
@@ -205,7 +202,7 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 			ctx := e.NewContext(req, rec)
 
 			// Call ResponseErrorValidation
-			responseErr := controller.ResponseErrorValidation(ctx, tt.err)
+			responseErr := ResponseErrorValidation(ctx, tt.err)
 			require.NoError(t, responseErr)
 
 			// Check HTTP status
@@ -236,7 +233,6 @@ func TestResponseErrorValidation_DomainMultiFieldError(t *testing.T) {
 
 func TestResponseErrorValidation_AddFieldErrorHelper(t *testing.T) {
 	e := setupTestEcho()
-	controller := Controller{}
 
 	t.Run("incrementally built validation error", func(t *testing.T) {
 		// Create empty validation error and build it incrementally
@@ -249,7 +245,7 @@ func TestResponseErrorValidation_AddFieldErrorHelper(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		responseErr := controller.ResponseErrorValidation(ctx, validationErr)
+		responseErr := ResponseErrorValidation(ctx, validationErr)
 		require.NoError(t, responseErr)
 
 		// Parse response
@@ -283,7 +279,6 @@ func TestResponseErrorValidation_AddFieldErrorHelper(t *testing.T) {
 
 func TestResponseErrorValidation_FallbackUnknownError(t *testing.T) {
 	e := setupTestEcho()
-	controller := Controller{}
 
 	t.Run("unknown error type gets wrapped as general field", func(t *testing.T) {
 		unknownErr := errors.New("some unexpected error")
@@ -292,7 +287,7 @@ func TestResponseErrorValidation_FallbackUnknownError(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		responseErr := controller.ResponseErrorValidation(ctx, unknownErr)
+		responseErr := ResponseErrorValidation(ctx, unknownErr)
 		require.NoError(t, responseErr)
 
 		// Check HTTP status
@@ -319,7 +314,6 @@ func TestResponseErrorValidation_FallbackUnknownError(t *testing.T) {
 
 func TestHandleServiceError_ValidationError(t *testing.T) {
 	e := setupTestEcho()
-	controller := Controller{}
 
 	tests := []struct {
 		name           string
@@ -354,7 +348,7 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 			ctx := e.NewContext(req, rec)
 
 			// Call HandleServiceError which should delegate to ResponseErrorValidation
-			responseErr := controller.HandleServiceError(ctx, tt.err, tt.operation)
+			responseErr := HandleServiceError(ctx, tt.err, tt.operation)
 			require.NoError(t, responseErr)
 
 			// Check HTTP status

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"lizobly/ctc-db-api/internal/user/mocks"
 	"lizobly/ctc-db-api/pkg/domain"
 	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
@@ -14,7 +15,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type UserServiceSuite struct {
@@ -61,7 +61,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 		request domain.LoginRequest
 	}
 	type want struct {
-		user domain.User
+		user *domain.User
 		// response  domain.LoginResponse
 		err error
 	}
@@ -79,7 +79,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 				Password: "password",
 			}},
 			want: want{
-				user: domain.User{
+				user: &domain.User{
 					Username: "isla",
 					Password: string(bcryptedPassword),
 				},
@@ -98,7 +98,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			want:    want{},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, gorm.ErrRecordNotFound).Once()
+				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, domain.NewNotFoundError("user", args.request.Username)).Once()
 
 			},
 		},
@@ -127,7 +127,8 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			got, err := s.svc.Login(ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(s.T(), err)
-				assert.True(s.T(), domain.IsAuthenticationError(err), "expected AuthenticationError")
+				var ae *domain.AuthenticationError
+				assert.True(s.T(), errors.As(err, &ae), "expected AuthenticationError")
 				return
 			}
 

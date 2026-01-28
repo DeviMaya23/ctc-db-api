@@ -216,22 +216,24 @@ func (_c *MockTravellerRepository_Delete_Call) RunAndReturn(run func(ctx context
 }
 
 // GetByID provides a mock function for the type MockTravellerRepository
-func (_mock *MockTravellerRepository) GetByID(ctx context.Context, id int) (domain.Traveller, error) {
+func (_mock *MockTravellerRepository) GetByID(ctx context.Context, id int) (*domain.Traveller, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByID")
 	}
 
-	var r0 domain.Traveller
+	var r0 *domain.Traveller
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (domain.Traveller, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (*domain.Traveller, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) domain.Traveller); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) *domain.Traveller); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
-		r0 = ret.Get(0).(domain.Traveller)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Traveller)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
 		r1 = returnFunc(ctx, id)
@@ -271,35 +273,35 @@ func (_c *MockTravellerRepository_GetByID_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockTravellerRepository_GetByID_Call) Return(result domain.Traveller, err error) *MockTravellerRepository_GetByID_Call {
+func (_c *MockTravellerRepository_GetByID_Call) Return(result *domain.Traveller, err error) *MockTravellerRepository_GetByID_Call {
 	_c.Call.Return(result, err)
 	return _c
 }
 
-func (_c *MockTravellerRepository_GetByID_Call) RunAndReturn(run func(ctx context.Context, id int) (domain.Traveller, error)) *MockTravellerRepository_GetByID_Call {
+func (_c *MockTravellerRepository_GetByID_Call) RunAndReturn(run func(ctx context.Context, id int) (*domain.Traveller, error)) *MockTravellerRepository_GetByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetList provides a mock function for the type MockTravellerRepository
-func (_mock *MockTravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]domain.Traveller, int64, error) {
+func (_mock *MockTravellerRepository) GetList(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]*domain.Traveller, int64, error) {
 	ret := _mock.Called(ctx, filter, offset, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetList")
 	}
 
-	var r0 []domain.Traveller
+	var r0 []*domain.Traveller
 	var r1 int64
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) ([]domain.Traveller, int64, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) ([]*domain.Traveller, int64, error)); ok {
 		return returnFunc(ctx, filter, offset, limit)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) []domain.Traveller); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ListTravellerRequest, int, int) []*domain.Traveller); ok {
 		r0 = returnFunc(ctx, filter, offset, limit)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.Traveller)
+			r0 = ret.Get(0).([]*domain.Traveller)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ListTravellerRequest, int, int) int64); ok {
@@ -357,12 +359,12 @@ func (_c *MockTravellerRepository_GetList_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockTravellerRepository_GetList_Call) Return(result []domain.Traveller, total int64, err error) *MockTravellerRepository_GetList_Call {
+func (_c *MockTravellerRepository_GetList_Call) Return(result []*domain.Traveller, total int64, err error) *MockTravellerRepository_GetList_Call {
 	_c.Call.Return(result, total, err)
 	return _c
 }
 
-func (_c *MockTravellerRepository_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]domain.Traveller, int64, error)) *MockTravellerRepository_GetList_Call {
+func (_c *MockTravellerRepository_GetList_Call) RunAndReturn(run func(ctx context.Context, filter domain.ListTravellerRequest, offset int, limit int) ([]*domain.Traveller, int64, error)) *MockTravellerRepository_GetList_Call {
 	_c.Call.Return(run)
 	return _c
 }

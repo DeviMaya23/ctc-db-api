@@ -208,7 +208,7 @@ func (s *AccessoryHandlerSuite) TestAccessoryHandler_GetList() {
 			want: want{
 				responseBody: controller.StandardAPIResponse{
 					Message: "error get data",
-					Errors:  gorm.ErrInvalidDB.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},

@@ -50,7 +50,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 		id int
 	}
 	type want struct {
-		traveller domain.Traveller
+		traveller *domain.Traveller
 		err       error
 	}
 	tests := []struct {
@@ -63,7 +63,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 		{
 			name: "success",
 			args: args{id: 1},
-			want: want{traveller: domain.Traveller{
+			want: want{traveller: &domain.Traveller{
 				Name: "Fiore",
 				CommonModel: domain.CommonModel{
 					ID: 1,
@@ -77,7 +77,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 		}, {
 			name:    "failed",
 			args:    args{id: 1},
-			want:    want{err: gorm.ErrRecordNotFound},
+			want:    want{err: domain.NewNotFoundError("traveller", 1)},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(want.traveller, want.err).Once()
@@ -309,7 +309,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 					Job:         constants.JobMerchant,
 				},
 			},
-			want:    want{err: gorm.ErrRecordNotFound},
+			want:    want{err: domain.NewNotFoundError("traveller", 1)},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
@@ -463,7 +463,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := []domain.Traveller{
+				travellers := []*domain.Traveller{
 					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5},
 					{CommonModel: domain.CommonModel{ID: 2}, Name: "Viola", Rarity: 4},
 				}
@@ -484,7 +484,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := []domain.Traveller{
+				travellers := []*domain.Traveller{
 					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5},
 				}
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
@@ -504,7 +504,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := []domain.Traveller{
+				travellers := []*domain.Traveller{
 					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5, InfluenceID: constants.GetInfluenceID(constants.InfluencePower)},
 				}
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
@@ -524,7 +524,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := []domain.Traveller{
+				travellers := []*domain.Traveller{
 					{CommonModel: domain.CommonModel{ID: 1}, Name: "Fiore", Rarity: 5, JobID: constants.GetJobID(constants.JobWarrior)},
 				}
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
@@ -544,9 +544,9 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := make([]domain.Traveller, 10)
+				travellers := make([]*domain.Traveller, 10)
 				for i := 0; i < 10; i++ {
-					travellers[i] = domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 1)}, Name: "Test"}
+					travellers[i] = &domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 1)}, Name: "Test"}
 				}
 				// Normalized params: page 1, page_size 10, offset 0
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
@@ -566,9 +566,9 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := make([]domain.Traveller, 10)
+				travellers := make([]*domain.Traveller, 10)
 				for i := 0; i < 10; i++ {
-					travellers[i] = domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 11)}, Name: "Test"}
+					travellers[i] = &domain.Traveller{CommonModel: domain.CommonModel{ID: int64(i + 11)}, Name: "Test"}
 				}
 				// Page 2: offset = (2-1)*10 = 10
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 10, 10).Return(travellers, want.total, want.err).Once()
@@ -588,7 +588,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetList() {
 			},
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				travellers := []domain.Traveller{}
+				travellers := []*domain.Traveller{}
 				s.travellerRepo.On("GetList", mock.Anything, args.filter, 0, 10).Return(travellers, want.total, want.err).Once()
 			},
 		},

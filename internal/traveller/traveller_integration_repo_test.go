@@ -3,6 +3,7 @@ package traveller
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
@@ -109,6 +110,7 @@ func TestTravellerRepository_Integration(t *testing.T) {
 		assert.Nil(t, repo.Delete(ctx, int(tr.ID)))
 
 		_, err := repo.GetByID(ctx, int(tr.ID))
-		assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError but got: %v", err)
+		var nfe *domain.NotFoundError
+		assert.True(t, errors.As(err, &nfe), "expected NotFoundError but got: %v", err)
 	})
 }

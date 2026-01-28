@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"context"
+	"fmt"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/logging"
 	"time"
@@ -44,7 +45,7 @@ func (s *TokenService) GenerateToken(ctx context.Context, username string) (toke
 			zap.String("user.username", username),
 			zap.Error(err),
 		)
-		return "", time.Time{}, domain.NewInternalError("failed to generate authentication token")
+		return "", time.Time{}, fmt.Errorf("generate token: %w", err)
 	}
 
 	s.logger.WithContext(ctx).Debug("JWT token generated",
