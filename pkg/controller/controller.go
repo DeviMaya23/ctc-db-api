@@ -12,9 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Controller struct {
-}
-
 type StandardAPIResponse struct {
 	Message  string      `json:"message"`
 	Data     interface{} `json:"data"`
@@ -27,8 +24,8 @@ type ValidationErrorFields struct {
 	Message string `json:"message"`
 }
 
-func (c Controller) Ok(ctx echo.Context, message string, data, metadata interface{}) error {
-
+// Ok returns 200 OK status with data and optional metadata
+func Ok(ctx echo.Context, message string, data, metadata interface{}) error {
 	return ctx.JSON(http.StatusOK, StandardAPIResponse{
 		Message:  message,
 		Data:     data,
@@ -37,7 +34,7 @@ func (c Controller) Ok(ctx echo.Context, message string, data, metadata interfac
 }
 
 // Created returns 201 Created status with Location header
-func (c Controller) Created(ctx echo.Context, message string, data interface{}, location string) error {
+func Created(ctx echo.Context, message string, data interface{}, location string) error {
 	if location != "" {
 		ctx.Response().Header().Set("Location", location)
 	}
@@ -48,34 +45,35 @@ func (c Controller) Created(ctx echo.Context, message string, data interface{}, 
 }
 
 // NoContent returns 204 No Content status with empty body
-func (c Controller) NoContent(ctx echo.Context) error {
+func NoContent(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusNoContent)
 }
 
 // NotFound returns 404 Not Found status
-func (c Controller) NotFound(ctx echo.Context, message string) error {
+func NotFound(ctx echo.Context, message string) error {
 	return ctx.JSON(http.StatusNotFound, StandardAPIResponse{
 		Message: message,
 	})
 }
 
 // InternalError returns 500 Internal Server Error status
-func (c Controller) InternalError(ctx echo.Context, message string, errorData interface{}) error {
+func InternalError(ctx echo.Context, message string, errorData interface{}) error {
 	return ctx.JSON(http.StatusInternalServerError, StandardAPIResponse{
 		Message: message,
 		Errors:  errorData,
 	})
 }
 
-func (c Controller) ResponseError(ctx echo.Context, httpStatus int, message string, errorData interface{}) error {
-
+// ResponseError returns a JSON response with the specified HTTP status
+func ResponseError(ctx echo.Context, httpStatus int, message string, errorData interface{}) error {
 	return ctx.JSON(httpStatus, StandardAPIResponse{
 		Message: message,
 		Errors:  errorData,
 	})
 }
 
-func (c Controller) ResponseErrorValidation(ctx echo.Context, err error) error {
+// ResponseErrorValidation returns 400 Bad Request with validation error details
+func ResponseErrorValidation(ctx echo.Context, err error) error {
 	var errMsg []ValidationErrorFields
 
 	// Handle go-playground validator errors (from ctx.Validate)
@@ -113,30 +111,28 @@ func (c Controller) ResponseErrorValidation(ctx echo.Context, err error) error {
 }
 
 // HandleServiceError maps domain errors to appropriate HTTP responses
-// Returns true if error was handled, false if it's an unhandled error (should return 500)
-func (c Controller) HandleServiceError(ctx echo.Context, err error, operation string) error {
+func HandleServiceError(ctx echo.Context, err error, operation string) error {
 	if err == nil {
 		return nil
 	}
 
-	// Import domain package at top of file to use domain.IsNotFoundError, etc.
 	// Check domain errors and map to HTTP status
 	if domain.IsNotFoundError(err) {
-		return c.NotFound(ctx, err.Error())
+		return NotFound(ctx, err.Error())
 	}
 	if domain.IsValidationError(err) {
-		return c.ResponseErrorValidation(ctx, err)
+		return ResponseErrorValidation(ctx, err)
 	}
 	if domain.IsConflictError(err) {
-		return c.ResponseError(ctx, http.StatusConflict, "error "+operation, err.Error())
+		return ResponseError(ctx, http.StatusConflict, "error "+operation, err.Error())
 	}
 	if domain.IsAuthenticationError(err) {
-		return c.ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
+		return ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
 	}
 	if domain.IsInternalError(err) {
-		return c.InternalError(ctx, err.Error(), nil)
+		return InternalError(ctx, err.Error(), nil)
 	}
 
 	// Unhandled error - return 500
-	return c.InternalError(ctx, "error "+operation, err.Error())
+	return InternalError(ctx, "error "+operation, err.Error())
 }

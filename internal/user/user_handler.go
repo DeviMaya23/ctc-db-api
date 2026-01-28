@@ -14,7 +14,6 @@ type UserService interface {
 }
 
 type UserHandler struct {
-	controller.Controller
 	Service UserService
 }
 
@@ -34,18 +33,18 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 
 	err := ctx.Bind(&request)
 	if err != nil {
-		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&request)
 	if err != nil {
-		return h.ResponseErrorValidation(ctx, err)
+		return controller.ResponseErrorValidation(ctx, err)
 	}
 
 	res, err := h.Service.Login(ctx.Request().Context(), request)
 	if err != nil {
-		return h.HandleServiceError(ctx, err, "login")
+		return controller.HandleServiceError(ctx, err, "login")
 	}
 
-	return h.Ok(ctx, "success", res, nil)
+	return controller.Ok(ctx, "success", res, nil)
 }

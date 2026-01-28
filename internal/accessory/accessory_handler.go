@@ -15,7 +15,6 @@ type AccessoryService interface {
 }
 
 type AccessoryHandler struct {
-	controller.Controller
 	Service AccessoryService
 }
 
@@ -51,27 +50,27 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListAccessoryRequest
 	err := ctx.Bind(&filter)
 	if err != nil {
-		return h.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
 	}
 
 	err = ctx.Validate(&filter)
 	if err != nil {
-		return h.ResponseErrorValidation(ctx, err)
+		return controller.ResponseErrorValidation(ctx, err)
 	}
 
 	var params helpers.PaginationParams
 	err = ctx.Bind(&params)
 	if err != nil {
-		return h.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "error validation", err.Error())
 	}
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return h.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get data")
 	}
 
 	// Set cache headers for list responses
 	helpers.SetListCacheHeaders(ctx)
 
-	return h.Ok(ctx, "success", result, nil)
+	return controller.Ok(ctx, "success", result, nil)
 }
