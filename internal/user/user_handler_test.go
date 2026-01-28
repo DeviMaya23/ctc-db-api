@@ -125,7 +125,7 @@ func (s *UserHandlerSuite) TestUserHandler_Login() {
 				loginResponse: resp,
 				responseBody: controller.StandardAPIResponse{
 					Message: "error login",
-					Errors:  gorm.ErrCheckConstraintViolated.Error(),
+					Errors:  nil,
 				},
 				statusCode: http.StatusInternalServerError,
 			},

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 
 	"lizobly/ctc-db-api/pkg/domain"
@@ -116,23 +117,27 @@ func HandleServiceError(ctx echo.Context, err error, operation string) error {
 		return nil
 	}
 
-	// Check domain errors and map to HTTP status
-	if domain.IsNotFoundError(err) {
+	// Struct domain errors - use errors.As()
+	var nfe *domain.NotFoundError
+	if errors.As(err, &nfe) {
 		return NotFound(ctx, err.Error())
 	}
-	if domain.IsValidationError(err) {
-		return ResponseErrorValidation(ctx, err)
-	}
-	if domain.IsConflictError(err) {
-		return ResponseError(ctx, http.StatusConflict, "error "+operation, err.Error())
-	}
-	if domain.IsAuthenticationError(err) {
-		return ResponseError(ctx, http.StatusUnauthorized, "error "+operation, err.Error())
-	}
-	if domain.IsInternalError(err) {
-		return InternalError(ctx, err.Error(), nil)
+
+	var ce *domain.ConflictError
+	if errors.As(err, &ce) {
+		return ResponseError(ctx, http.StatusConflict, "error "+operation, ce.Message)
 	}
 
-	// Unhandled error - return 500
-	return InternalError(ctx, "error "+operation, err.Error())
+	var ae *domain.AuthenticationError
+	if errors.As(err, &ae) {
+		return ResponseError(ctx, http.StatusUnauthorized, "error "+operation, ae.Message)
+	}
+
+	var ve *domain.ValidationError
+	if errors.As(err, &ve) {
+		return ResponseErrorValidation(ctx, err)
+	}
+
+	// Unmapped errors - return 500
+	return InternalError(ctx, "error "+operation, nil)
 }

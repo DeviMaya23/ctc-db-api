@@ -49,8 +49,9 @@ func TestNewValidationError(t *testing.T) {
 			}
 
 			// Verify it's a ValidationError
-			if !IsValidationError(err) {
-				t.Error("IsValidationError should return true")
+			var ve *ValidationError
+			if !errors.As(err, &ve) {
+				t.Error("errors.As should return true for ValidationError")
 			}
 
 			// Verify errors are set correctly
@@ -151,7 +152,8 @@ func TestIsValidationError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsValidationError(tt.err)
+			var ve *ValidationError
+			result := errors.As(tt.err, &ve)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}

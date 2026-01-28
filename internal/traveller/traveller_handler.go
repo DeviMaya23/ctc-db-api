@@ -108,10 +108,6 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 		return controller.HandleServiceError(ctx, err, "get data")
 	}
 
-	if traveller == nil {
-		return controller.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get data")
-	}
-
 	// Set cache headers and check if client has valid cached version
 	if helpers.SetCacheHeaders(ctx, traveller.ETag(), traveller.LastModified(), constants.CacheMaxAgeResource) {
 		return helpers.RespondNotModified(ctx)
@@ -144,10 +140,6 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 		return controller.HandleServiceError(ctx, err, "get created data")
 	}
 
-	if traveller == nil {
-		return controller.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get created data")
-	}
-
 	// Set ETag and Last-Modified for created resource
 	ctx.Response().Header().Set("ETag", traveller.ETag())
 	ctx.Response().Header().Set("Last-Modified", traveller.LastModified())
@@ -169,10 +161,6 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 		currentTraveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
 			return controller.HandleServiceError(ctx, err, "get data")
-		}
-
-		if currentTraveller == nil {
-			return controller.HandleServiceError(ctx, domain.NewNotFoundError("traveller", id), "get data")
 		}
 
 		// Prevent lost updates - resource was modified

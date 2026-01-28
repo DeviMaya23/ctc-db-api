@@ -2,6 +2,7 @@ package traveller
 
 import (
 	"context"
+	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
 	"lizobly/ctc-db-api/pkg/logging"
@@ -70,7 +71,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_GetByID() {
 			},
 			wantErr: true,
 			checkFn: func(t *testing.T, err error) {
-				assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError")
+				var nfe *domain.NotFoundError
+				assert.True(t, errors.As(err, &nfe), "expected NotFoundError")
 			},
 		},
 	}
@@ -219,7 +221,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Create() {
 			},
 			wantErr: true,
 			checkFn: func(t *testing.T, err error) {
-				assert.True(t, domain.IsConflictError(err), "expected ConflictError")
+				var ce *domain.ConflictError
+				assert.True(t, errors.As(err, &ce), "expected ConflictError")
 			},
 		},
 	}
@@ -281,7 +284,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Update() {
 			},
 			wantErr: true,
 			checkFn: func(t *testing.T, err error) {
-				assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError")
+				var nfe *domain.NotFoundError
+				assert.True(t, errors.As(err, &nfe), "expected NotFoundError")
 			},
 		},
 		{
@@ -300,7 +304,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Update() {
 			},
 			wantErr: true,
 			checkFn: func(t *testing.T, err error) {
-				assert.True(t, domain.IsConflictError(err), "expected ConflictError")
+				var ce *domain.ConflictError
+				assert.True(t, errors.As(err, &ce), "expected ConflictError")
 			},
 		},
 	}
@@ -352,7 +357,8 @@ func (s *TravellerRepositorySuite) TestTravellerRepository_Delete() {
 			},
 			wantErr: true,
 			checkFn: func(t *testing.T, err error) {
-				assert.True(t, domain.IsNotFoundError(err), "expected NotFoundError")
+				var nfe *domain.NotFoundError
+				assert.True(t, errors.As(err, &nfe), "expected NotFoundError")
 			},
 		},
 	}

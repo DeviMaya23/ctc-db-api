@@ -77,7 +77,7 @@ func (s *TravellerServiceSuite) TestTravellerService_GetByID() {
 		}, {
 			name:    "failed",
 			args:    args{id: 1},
-			want:    want{err: gorm.ErrRecordNotFound},
+			want:    want{err: domain.NewNotFoundError("traveller", 1)},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.travellerRepo.On("GetByID", mock.Anything, args.id).Return(want.traveller, want.err).Once()
@@ -309,7 +309,7 @@ func (s *TravellerServiceSuite) TestTravellerService_Update() {
 					Job:         constants.JobMerchant,
 				},
 			},
-			want:    want{err: gorm.ErrRecordNotFound},
+			want:    want{err: domain.NewNotFoundError("traveller", 1)},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.travellerRepo.On("UpdateTravellerWithAccessory", mock.Anything, args.id, mock.Anything, mock.Anything).Return(want.err).Once()
