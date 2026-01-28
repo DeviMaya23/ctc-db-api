@@ -40,24 +40,10 @@ func (s *travellerService) GetByID(ctx context.Context, id int) (res *domain.Tra
 	)
 	defer telemetry.EndSpanWithError(span, err)
 
-	s.logger.WithContext(ctx).Info("fetching traveller",
-		zap.Int("traveller.id", id),
-	)
-
 	res, err = s.travellerRepo.GetByID(ctx, id)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to fetch traveller",
-			zap.Int("traveller.id", id),
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return
 	}
-
-	s.logger.WithContext(ctx).Info("traveller fetched successfully",
-		zap.Int("traveller.id", id),
-		zap.String("traveller.name", res.Name),
-	)
 
 	return
 }
@@ -80,27 +66,10 @@ func (s *travellerService) GetList(ctx context.Context, filter domain.ListTravel
 		filter.JobID = constants.GetJobID(filter.Job)
 	}
 
-	s.logger.WithContext(ctx).Info("fetching traveller list",
-		zap.Int("page", params.Page),
-		zap.Int("page_size", params.PageSize),
-		zap.String("filter.name", filter.Name),
-		zap.String("filter.influence", filter.Influence),
-		zap.String("filter.job", filter.Job),
-	)
-
 	travellers, total, err := s.travellerRepo.GetList(ctx, filter, params.Offset(), params.PageSize)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to fetch traveller list",
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return
 	}
-
-	s.logger.WithContext(ctx).Info("traveller list fetched successfully",
-		zap.Int64("total", total),
-		zap.Int("returned", len(travellers)),
-	)
 
 	// Map to response DTOs
 	items := make([]domain.TravellerListItemResponse, len(travellers))
@@ -118,10 +87,6 @@ func (s *travellerService) Create(ctx context.Context, input domain.CreateTravel
 		attribute.String("traveller.name", input.Name),
 	)
 	defer telemetry.EndSpanWithError(span, err)
-
-	s.logger.WithContext(ctx).Info("creating traveller",
-		zap.String("traveller.name", input.Name),
-	)
 
 	// Parse release date
 	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
@@ -164,18 +129,8 @@ func (s *travellerService) Create(ctx context.Context, input domain.CreateTravel
 	// Create traveller with accessory in transaction
 	err = s.travellerRepo.CreateTravellerWithAccessory(ctx, &newTraveller, newAccessory)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to create traveller",
-			zap.String("traveller.name", input.Name),
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return 0, err
 	}
-
-	s.logger.WithContext(ctx).Info("traveller created successfully",
-		zap.String("traveller.name", input.Name),
-		zap.Int64("traveller.id", newTraveller.ID),
-	)
 
 	return newTraveller.ID, nil
 }
@@ -186,11 +141,6 @@ func (s *travellerService) Update(ctx context.Context, id int, input domain.Upda
 		attribute.String("traveller.name", input.Name),
 	)
 	defer telemetry.EndSpanWithError(span, err)
-
-	s.logger.WithContext(ctx).Info("updating traveller",
-		zap.Int("traveller.id", id),
-		zap.String("traveller.name", input.Name),
-	)
 
 	// Parse release date
 	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
@@ -235,17 +185,8 @@ func (s *travellerService) Update(ctx context.Context, id int, input domain.Upda
 	// Repository handles checking if accessory exists and decides INSERT vs UPDATE
 	err = s.travellerRepo.UpdateTravellerWithAccessory(ctx, id, &updatedTraveller, updatedAccessory)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to update traveller",
-			zap.Int("traveller.id", id),
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return
 	}
-
-	s.logger.WithContext(ctx).Info("traveller updated successfully",
-		zap.Int("traveller.id", id),
-	)
 
 	return
 }
@@ -256,23 +197,10 @@ func (s *travellerService) Delete(ctx context.Context, id int) (err error) {
 	)
 	defer telemetry.EndSpanWithError(span, err)
 
-	s.logger.WithContext(ctx).Info("deleting traveller",
-		zap.Int("traveller.id", id),
-	)
-
 	err = s.travellerRepo.Delete(ctx, id)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to delete traveller",
-			zap.Int("traveller.id", id),
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return
 	}
-
-	s.logger.WithContext(ctx).Info("traveller deleted successfully",
-		zap.Int("traveller.id", id),
-	)
 
 	return
 }

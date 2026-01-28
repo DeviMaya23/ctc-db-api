@@ -47,12 +47,6 @@ func (r *travellerRepository) GetByID(ctx context.Context, id int) (result *doma
 		return
 	}
 
-	r.logger.WithContext(ctx).Debug("traveller retrieved",
-		append(logFields,
-			zap.String("traveller.name", result.Name),
-			zap.Int("traveller.rarity", result.Rarity),
-		)...)
-
 	return
 }
 
@@ -95,8 +89,6 @@ func (r *travellerRepository) GetList(ctx context.Context, filter domain.ListTra
 		return
 	}
 
-	r.logger.WithContext(ctx).Debug("traveller list retrieved", logFields...)
-
 	return
 }
 
@@ -106,13 +98,6 @@ func (r *travellerRepository) Create(ctx context.Context, input *domain.Travelle
 		attribute.Int("traveller.rarity", input.Rarity),
 	)
 	defer op.End(err)
-
-	r.logger.WithContext(ctx).Info("creating traveller",
-		zap.String("traveller.name", input.Name),
-		zap.Int("traveller.rarity", input.Rarity),
-		zap.Int("influence.id", int(input.InfluenceID)),
-		zap.Int("job.id", int(input.JobID)),
-	)
 
 	err = r.db.WithContext(ctx).Create(input).Error
 
@@ -132,9 +117,6 @@ func (r *travellerRepository) Create(ctx context.Context, input *domain.Travelle
 		return
 	}
 
-	r.logger.WithContext(ctx).Info("traveller created successfully",
-		append(logFields, zap.Int64("traveller.id", input.ID))...)
-
 	return
 }
 
@@ -144,11 +126,6 @@ func (r *travellerRepository) Update(ctx context.Context, input *domain.Travelle
 		attribute.String("traveller.name", input.Name),
 	)
 	defer op.End(err)
-
-	r.logger.WithContext(ctx).Info("updating traveller",
-		zap.Int64("traveller.id", input.ID),
-		zap.String("traveller.name", input.Name),
-	)
 
 	result := r.db.WithContext(ctx).Updates(input)
 	err = result.Error
@@ -175,8 +152,6 @@ func (r *travellerRepository) Update(ctx context.Context, input *domain.Travelle
 		return domain.NewNotFoundError("traveller", input.ID)
 	}
 
-	r.logger.WithContext(ctx).Info("traveller updated successfully", logFields...)
-
 	return
 }
 
@@ -185,10 +160,6 @@ func (r *travellerRepository) Delete(ctx context.Context, id int) (err error) {
 		attribute.Int("traveller.id", id),
 	)
 	defer op.End(err)
-
-	r.logger.WithContext(ctx).Info("deleting traveller",
-		zap.Int("traveller.id", id),
-	)
 
 	result := r.db.WithContext(ctx).Delete(&domain.Traveller{}, id)
 	err = result.Error
@@ -210,8 +181,6 @@ func (r *travellerRepository) Delete(ctx context.Context, id int) (err error) {
 		return domain.NewNotFoundError("traveller", id)
 	}
 
-	r.logger.WithContext(ctx).Info("traveller deleted successfully", logFields...)
-
 	return
 }
 
@@ -223,11 +192,6 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 	)
 	defer op.End(err)
 
-	r.logger.WithContext(ctx).Info("creating traveller with accessory in transaction",
-		zap.String("traveller.name", traveller.Name),
-		zap.Bool("has_accessory", accessory != nil),
-	)
-
 	// Start transaction
 	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Create accessory first if provided
@@ -237,16 +201,8 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 				attribute.String("accessory.name", accessory.Name),
 			)
 
-			r.logger.WithContext(ctx).Info("creating accessory in transaction",
-				zap.String("accessory.name", accessory.Name),
-			)
-
 			if err := tx.Create(accessory).Error; err != nil {
 				accOp.End(err)
-				r.logger.WithContext(ctx).Error("failed to create accessory in transaction",
-					zap.String("accessory.name", accessory.Name),
-					zap.Error(err),
-				)
 				return err
 			}
 			accOp.End(nil)
@@ -254,10 +210,6 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 			// Set accessory ID on traveller
 			accessoryIDInt := int(accessory.ID)
 			traveller.AccessoryID = &accessoryIDInt
-
-			r.logger.WithContext(ctx).Info("accessory created in transaction",
-				zap.Int64("accessory.id", accessory.ID),
-			)
 		}
 
 		// Create traveller
@@ -276,34 +228,23 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 				)
 				return domain.NewConflictError("traveller with this name already exists")
 			}
-			r.logger.WithContext(ctx).Error("failed to create traveller in transaction",
-				zap.String("traveller.name", traveller.Name),
-				zap.Error(err),
-			)
 			return err
 		}
 		travOp.End(nil)
 
-		r.logger.WithContext(ctx).Info("traveller created in transaction",
-			zap.Int64("traveller.id", traveller.ID),
-		)
-
 		return nil
 	})
 
-	logFields := append(
-		logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
-		zap.String("traveller.name", traveller.Name),
-	)
-
 	if err != nil {
-		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("transaction failed", logFields...)
+		r.logger.WithContext(ctx).Error("transaction failed",
+			append(
+				logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
+				zap.String("traveller.name", traveller.Name),
+				zap.Error(err),
+			)...,
+		)
 		return
 	}
-
-	r.logger.WithContext(ctx).Info("traveller with accessory created successfully",
-		append(logFields, zap.Int64("traveller.id", traveller.ID))...)
 
 	return
 }
@@ -316,12 +257,6 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 		attribute.Bool("has_accessory", accessory != nil),
 	)
 	defer op.End(err)
-
-	r.logger.WithContext(ctx).Info("updating traveller with accessory in transaction",
-		zap.Int("traveller.id", id),
-		zap.String("traveller.name", traveller.Name),
-		zap.Bool("has_accessory", accessory != nil),
-	)
 
 	// Start transaction
 	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -340,10 +275,6 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 				)
 				return domain.NewNotFoundError("traveller", id)
 			}
-			r.logger.WithContext(ctx).Error("failed to fetch existing traveller",
-				zap.Int("traveller.id", id),
-				zap.Error(err),
-			)
 			return err
 		}
 		fetchOp.End(nil)
@@ -360,11 +291,6 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 					attribute.String("accessory.name", accessory.Name),
 				)
 
-				r.logger.WithContext(ctx).Info("updating existing accessory in transaction",
-					zap.Int64("accessory.id", accessory.ID),
-					zap.String("accessory.name", accessory.Name),
-				)
-
 				updateData := map[string]interface{}{
 					"name":   accessory.Name,
 					"hp":     accessory.HP,
@@ -379,19 +305,11 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 				}
 				if err := tx.Model(&domain.Accessory{}).Where("id = ?", accessory.ID).Updates(updateData).Error; err != nil {
 					accUpdateOp.End(err)
-					r.logger.WithContext(ctx).Error("failed to update accessory in transaction",
-						zap.Int64("accessory.id", accessory.ID),
-						zap.Error(err),
-					)
 					return err
 				}
 				accUpdateOp.End(nil)
 
 				traveller.AccessoryID = existingTraveller.AccessoryID
-
-				r.logger.WithContext(ctx).Info("accessory updated in transaction",
-					zap.Int64("accessory.id", accessory.ID),
-				)
 			} else {
 				// Create new accessory
 				_, accCreateOp := telemetry.StartDBSpan(ctx, "repository.traveller",
@@ -399,16 +317,8 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 					attribute.String("accessory.name", accessory.Name),
 				)
 
-				r.logger.WithContext(ctx).Info("creating new accessory in transaction",
-					zap.String("accessory.name", accessory.Name),
-				)
-
 				if err := tx.Create(accessory).Error; err != nil {
 					accCreateOp.End(err)
-					r.logger.WithContext(ctx).Error("failed to create accessory in transaction",
-						zap.String("accessory.name", accessory.Name),
-						zap.Error(err),
-					)
 					return err
 				}
 				accCreateOp.End(nil)
@@ -416,10 +326,6 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 				// Set new accessory ID on traveller
 				accessoryIDInt := int(accessory.ID)
 				traveller.AccessoryID = &accessoryIDInt
-
-				r.logger.WithContext(ctx).Info("new accessory created in transaction",
-					zap.Int64("accessory.id", accessory.ID),
-				)
 			}
 		} else {
 			// Keep existing accessory ID (no change to accessory)
@@ -444,33 +350,23 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 				)
 				return domain.NewConflictError("traveller with this name already exists")
 			}
-			r.logger.WithContext(ctx).Error("failed to update traveller in transaction",
-				zap.Int("traveller.id", id),
-				zap.Error(err),
-			)
 			return err
 		}
 		travUpdateOp.End(nil)
 
-		r.logger.WithContext(ctx).Info("traveller updated in transaction",
-			zap.Int("traveller.id", id),
-		)
-
 		return nil
 	})
 
-	logFields := append(
-		logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
-		zap.Int("traveller.id", id),
-	)
-
 	if err != nil {
-		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("transaction failed", logFields...)
+		r.logger.WithContext(ctx).Error("transaction failed",
+			append(
+				logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
+				zap.Int("traveller.id", id),
+				zap.Error(err),
+			)...,
+		)
 		return
 	}
-
-	r.logger.WithContext(ctx).Info("traveller with accessory updated successfully", logFields...)
 
 	return
 }

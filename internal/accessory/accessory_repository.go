@@ -29,25 +29,18 @@ func (r *accessoryRepository) Create(ctx context.Context, input *domain.Accessor
 	)
 	defer op.End(err)
 
-	r.logger.WithContext(ctx).Info("creating accessory",
-		zap.String("accessory.name", input.Name),
-	)
-
 	err = r.db.WithContext(ctx).Create(input).Error
 
-	logFields := append(
-		logging.DatabaseFields("insert", "m_accessory", op.Duration()),
-		zap.String("accessory.name", input.Name),
-	)
-
 	if err != nil {
-		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to create accessory", logFields...)
+		r.logger.WithContext(ctx).Error("failed to create accessory",
+			append(
+				logging.DatabaseFields("insert", "m_accessory", op.Duration()),
+				zap.String("accessory.name", input.Name),
+				zap.Error(err),
+			)...,
+		)
 		return
 	}
-
-	r.logger.WithContext(ctx).Info("accessory created successfully",
-		append(logFields, zap.Int64("accessory.id", input.ID))...)
 
 	return
 }
@@ -58,11 +51,6 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 		attribute.String("accessory.name", input.Name),
 	)
 	defer op.End(err)
-
-	r.logger.WithContext(ctx).Info("updating accessory",
-		zap.Int64("accessory.id", input.ID),
-		zap.String("accessory.name", input.Name),
-	)
 
 	updateData := map[string]interface{}{
 		"name":   input.Name,
@@ -78,18 +66,16 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 	}
 	err = r.db.WithContext(ctx).Model(&domain.Accessory{}).Where("id = ?", input.ID).Updates(updateData).Error
 
-	logFields := append(
-		logging.DatabaseFields("update", "m_accessory", op.Duration()),
-		zap.Int64("accessory.id", input.ID),
-	)
-
 	if err != nil {
-		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to update accessory", logFields...)
+		r.logger.WithContext(ctx).Error("failed to update accessory",
+			append(
+				logging.DatabaseFields("update", "m_accessory", op.Duration()),
+				zap.Int64("accessory.id", input.ID),
+				zap.Error(err),
+			)...,
+		)
 		return
 	}
-
-	r.logger.WithContext(ctx).Info("accessory updated successfully", logFields...)
 
 	return
 }
@@ -147,14 +133,6 @@ func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAcc
 			ownerNames[row.Accessory.ID] = row.Owner
 		}
 	}
-
-	logFields := append(
-		logging.DatabaseFields("select", "m_accessory", op.Duration()),
-		zap.Int64("total", total),
-		zap.Int("returned", len(result)),
-	)
-
-	r.logger.WithContext(ctx).Debug("accessory list retrieved", logFields...)
 
 	return
 }

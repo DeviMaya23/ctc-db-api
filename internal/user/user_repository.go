@@ -49,8 +49,5 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (re
 		return
 	}
 
-	r.logger.WithContext(ctx).Debug("user retrieved",
-		append(logFields, zap.Int64("user.id", result.ID))...)
-
 	return
 }
