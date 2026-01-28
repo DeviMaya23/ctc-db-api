@@ -90,7 +90,7 @@ func runMigrations(t *testing.T, ctx context.Context, dbHost string, dbPort, net
 
 	migrationPath := os.Getenv("MIGRATION_PATH")
 	if migrationPath == "" {
-		absPath, err := filepath.Abs("../../../../ctc-db")
+		absPath, err := filepath.Abs("../../../ctc-db")
 		if err != nil {
 			t.Fatalf("failed to get absolute path: %s", err)
 		}
@@ -155,7 +155,7 @@ func seedData(t *testing.T, connStr string) {
 	}
 	defer db.Close()
 
-	seedFilePath := filepath.Join("../../..", "testdata", "db-seed.sql")
+	seedFilePath := filepath.Join("../..", "testdata", "db-seed.sql")
 	content, err := os.ReadFile(seedFilePath)
 	if err != nil {
 		t.Fatalf("failed to read seed file: %s", err)
