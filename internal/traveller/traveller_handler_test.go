@@ -258,7 +258,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 
 	updateRequest := domain.UpdateTravellerRequest{
 		Name:      "Fiore",
-		Rarity:    6,
+		Rarity:    4,
 		Influence: constants.InfluencePower,
 		Job:       constants.JobMerchant,
 	}
@@ -266,7 +266,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 	updatedTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
-		Rarity:      6,
+		Rarity:      4,
 		InfluenceID: constants.GetInfluenceID(constants.InfluencePower),
 		Influence:   domain.Influence{Name: constants.InfluencePower},
 		JobID:       constants.GetJobID(constants.JobMerchant),

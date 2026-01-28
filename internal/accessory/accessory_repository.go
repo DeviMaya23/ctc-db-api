@@ -5,7 +5,6 @@ import (
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/logging"
 	"lizobly/ctc-db-api/pkg/telemetry"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -25,12 +24,10 @@ func NewAccessoryRepository(db *gorm.DB, logger *logging.Logger) *accessoryRepos
 }
 
 func (r *accessoryRepository) Create(ctx context.Context, input *domain.Accessory) (err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Create", "insert", "m_accessory",
+	ctx, op := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Create", "insert", "m_accessory",
 		attribute.String("accessory.name", input.Name),
 	)
-	defer telemetry.EndSpanWithError(span, err)
-
-	start := time.Now()
+	defer op.End(err)
 
 	r.logger.WithContext(ctx).Info("creating accessory",
 		zap.String("accessory.name", input.Name),
@@ -38,10 +35,8 @@ func (r *accessoryRepository) Create(ctx context.Context, input *domain.Accessor
 
 	err = r.db.WithContext(ctx).Create(input).Error
 
-	duration := time.Since(start)
-	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("insert", "m_accessory", duration),
+		logging.DatabaseFields("insert", "m_accessory", op.Duration()),
 		zap.String("accessory.name", input.Name),
 	)
 
@@ -58,13 +53,11 @@ func (r *accessoryRepository) Create(ctx context.Context, input *domain.Accessor
 }
 
 func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessory) (err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Update", "update", "m_accessory",
+	ctx, op := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.Update", "update", "m_accessory",
 		attribute.Int64("accessory.id", input.ID),
 		attribute.String("accessory.name", input.Name),
 	)
-	defer telemetry.EndSpanWithError(span, err)
-
-	start := time.Now()
+	defer op.End(err)
 
 	r.logger.WithContext(ctx).Info("updating accessory",
 		zap.Int64("accessory.id", input.ID),
@@ -85,10 +78,8 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 	}
 	err = r.db.WithContext(ctx).Model(&domain.Accessory{}).Where("id = ?", input.ID).Updates(updateData).Error
 
-	duration := time.Since(start)
-	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("update", "m_accessory", duration),
+		logging.DatabaseFields("update", "m_accessory", op.Duration()),
 		zap.Int64("accessory.id", input.ID),
 	)
 
@@ -104,10 +95,8 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 }
 
 func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAccessoryRequest, offset, limit int) (result []*domain.Accessory, ownerNames map[int64]string, total int64, err error) {
-	ctx, span := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.GetList", "select", "m_accessory")
-	defer telemetry.EndSpanWithError(span, err)
-
-	start := time.Now()
+	ctx, op := telemetry.StartDBSpan(ctx, "repository.accessory", "AccessoryRepository.GetList", "select", "m_accessory")
+	defer op.End(err)
 
 	query := r.db.WithContext(ctx).
 		Model(&domain.Accessory{}).
@@ -159,10 +148,8 @@ func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAcc
 		}
 	}
 
-	duration := time.Since(start)
-	span.SetAttributes(attribute.Float64("db.duration_ms", float64(duration.Milliseconds())))
 	logFields := append(
-		logging.DatabaseFields("select", "m_accessory", duration),
+		logging.DatabaseFields("select", "m_accessory", op.Duration()),
 		zap.Int64("total", total),
 		zap.Int("returned", len(result)),
 	)

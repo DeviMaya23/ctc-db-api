@@ -25,7 +25,7 @@ func (Traveller) TableName() string {
 
 type CreateTravellerRequest struct {
 	Name        string                  `json:"name" validate:"required,lte=50"`
-	Rarity      int                     `json:"rarity" validate:"required"`
+	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5"`
 	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
 	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
 	Influence   string                  `json:"influence" validate:"required,influence"`
@@ -35,7 +35,7 @@ type CreateTravellerRequest struct {
 
 type UpdateTravellerRequest struct {
 	Name        string                  `json:"name" validate:"required,lte=50"`
-	Rarity      int                     `json:"rarity" validate:"required"`
+	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5"`
 	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
 	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
 	Influence   string                  `json:"influence" validate:"required,influence"`
