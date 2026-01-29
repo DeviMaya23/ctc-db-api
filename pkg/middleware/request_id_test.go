@@ -54,7 +54,7 @@ func TestRequestIDMiddleware_HeaderBehavior(t *testing.T) {
 			defer logger.Sync()
 
 			e := echo.New()
-			middleware := RequestIDMiddleware(logger)
+			middleware := RequestIDMiddleware()
 
 			handlerCalled := false
 			handler := func(c echo.Context) error {
@@ -89,11 +89,9 @@ func TestRequestIDMiddleware_HeaderBehavior(t *testing.T) {
 
 // TestRequestIDMiddleware_InjectsIntoContext tests request ID is injected into context
 func TestRequestIDMiddleware_InjectsIntoContext(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	e := echo.New()
-	middleware := RequestIDMiddleware(logger)
+	middleware := RequestIDMiddleware()
 
 	expectedID := "test-request-123"
 	handler := func(c echo.Context) error {
@@ -114,11 +112,9 @@ func TestRequestIDMiddleware_InjectsIntoContext(t *testing.T) {
 
 // TestRequestIDMiddleware_CallsNextHandler tests that next handler is called
 func TestRequestIDMiddleware_CallsNextHandler(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	e := echo.New()
-	middleware := RequestIDMiddleware(logger)
+	middleware := RequestIDMiddleware()
 
 	handlerCalled := false
 	handler := func(c echo.Context) error {
@@ -173,7 +169,7 @@ func TestRequestIDMiddleware_RequestBodyHandling(t *testing.T) {
 			defer logger.Sync()
 
 			e := echo.New()
-			middleware := RequestIDMiddleware(logger)
+			middleware := RequestIDMiddleware()
 
 			handler := func(c echo.Context) error {
 				if tt.verifyBody {
@@ -204,11 +200,9 @@ func TestRequestIDMiddleware_RequestBodyHandling(t *testing.T) {
 
 // TestRequestIDMiddleware_ErrorFromHandler tests error propagation
 func TestRequestIDMiddleware_ErrorFromHandler(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	e := echo.New()
-	middleware := RequestIDMiddleware(logger)
+	middleware := RequestIDMiddleware()
 
 	handler := func(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "test error")
@@ -227,8 +221,6 @@ func TestRequestIDMiddleware_ErrorFromHandler(t *testing.T) {
 
 // TestRequestIDMiddleware_DifferentHTTPMethods tests with various HTTP methods
 func TestRequestIDMiddleware_DifferentHTTPMethods(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	methods := []string{
 		http.MethodGet,
@@ -241,7 +233,7 @@ func TestRequestIDMiddleware_DifferentHTTPMethods(t *testing.T) {
 	for _, method := range methods {
 		t.Run(method, func(t *testing.T) {
 			e := echo.New()
-			middleware := RequestIDMiddleware(logger)
+			middleware := RequestIDMiddleware()
 
 			handler := func(c echo.Context) error {
 				return c.String(http.StatusOK, "OK")
@@ -260,11 +252,9 @@ func TestRequestIDMiddleware_DifferentHTTPMethods(t *testing.T) {
 
 // TestRequestIDMiddleware_MultipleRequests tests each request gets unique ID
 func TestRequestIDMiddleware_MultipleRequests(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	e := echo.New()
-	middleware := RequestIDMiddleware(logger)
+	middleware := RequestIDMiddleware()
 
 	handler := func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
@@ -291,11 +281,9 @@ func TestRequestIDMiddleware_MultipleRequests(t *testing.T) {
 
 // TestRequestIDMiddleware_LargeRequestBody tests with large request bodies
 func TestRequestIDMiddleware_LargeRequestBody(t *testing.T) {
-	logger := setupLogger()
-	defer logger.Sync()
 
 	e := echo.New()
-	middleware := RequestIDMiddleware(logger)
+	middleware := RequestIDMiddleware()
 
 	// Create large JSON payload
 	largeData := make(map[string]interface{})

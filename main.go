@@ -152,7 +152,8 @@ func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 
 	// Setup middleware
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
-	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
+	e.Use(pkgMiddleware.RequestIDMiddleware())
+	e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
 
 	// Setup Swagger
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
