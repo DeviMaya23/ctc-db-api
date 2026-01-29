@@ -5,12 +5,10 @@ import (
 	"errors"
 	"lizobly/ctc-db-api/internal/user/mocks"
 	"lizobly/ctc-db-api/pkg/domain"
-	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -20,7 +18,7 @@ import (
 type UserServiceSuite struct {
 	suite.Suite
 	userRepo     *mocks.MockUserRepository
-	tokenService *pkgJWT.TokenService
+	tokenService *mocks.MockTokenService
 	svc          *userService
 	logger       *logging.Logger
 }
@@ -31,12 +29,11 @@ func TestUserServiceSuite(t *testing.T) {
 
 func (s *UserServiceSuite) SetupSuite() {
 	s.logger, _ = logging.NewDevelopmentLogger()
-	s.tokenService = pkgJWT.NewTokenService("test-secret-key-for-unit-tests", 10*time.Minute, s.logger)
 }
 
 func (s *UserServiceSuite) SetupTest() {
-
 	s.userRepo = new(mocks.MockUserRepository)
+	s.tokenService = mocks.NewMockTokenService(s.T())
 	s.svc = NewUserService(s.userRepo, s.tokenService, s.logger)
 }
 
@@ -49,7 +46,7 @@ func (s *UserServiceSuite) TestUserService_NewService() {
 	s.T().Run("success", func(t *testing.T) {
 		logger, _ := logging.NewDevelopmentLogger()
 		repo := new(mocks.MockUserRepository)
-		tokenService := pkgJWT.NewTokenService("test-secret", 10*time.Minute, logger)
+		tokenService := mocks.NewMockTokenService(s.T())
 		NewUserService(repo, tokenService, logger)
 	})
 }
@@ -87,7 +84,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			wantErr: false,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, want.err).Once()
-
+				s.tokenService.On("GenerateToken", mock.Anything, args.request.Username).Return("valid-token", time.Now().Add(10*time.Minute), nil).Once()
 			},
 		},
 		{
@@ -99,7 +96,6 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, domain.NewNotFoundError("user", args.request.Username)).Once()
-
 			},
 		},
 		{
@@ -111,7 +107,6 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
 				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, nil).Once()
-
 			},
 		},
 	}
@@ -133,18 +128,8 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			}
 
 			assert.Nil(s.T(), err)
-
-			token, err := jwt.ParseWithClaims(got.Token, &domain.JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
-				return []byte("test-secret-key-for-unit-tests"), nil
-			})
-
-			if err != nil {
-				s.T().Errorf("error parsing token: %v", err)
-			}
-
-			if _, ok := token.Claims.(*domain.JWTClaims); !ok || !token.Valid {
-				s.T().Error("invalid token claims")
-			}
+			assert.NotNil(s.T(), got)
+			assert.Equal(s.T(), "valid-token", got.Token)
 
 		})
 	}
