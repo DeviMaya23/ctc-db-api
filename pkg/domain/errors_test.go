@@ -160,3 +160,237 @@ func TestIsValidationError(t *testing.T) {
 		})
 	}
 }
+
+// TestNewNotFoundError_Success tests NotFoundError creation with various ID types
+func TestNewNotFoundError_Success(t *testing.T) {
+	tests := []struct {
+		name          string
+		resource      string
+		id            interface{}
+		expectedError string
+	}{
+		{
+			name:          "integer ID",
+			resource:      "user",
+			id:            123,
+			expectedError: "user with id '123' not found",
+		},
+		{
+			name:          "string ID",
+			resource:      "post",
+			id:            "abc-123-def",
+			expectedError: "post with id 'abc-123-def' not found",
+		},
+		{
+			name:          "UUID ID",
+			resource:      "article",
+			id:            "550e8400-e29b-41d4-a716-446655440000",
+			expectedError: "article with id '550e8400-e29b-41d4-a716-446655440000' not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewNotFoundError(tt.resource, tt.id)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			if err.Error() != tt.expectedError {
+				t.Errorf("expected error message '%s', got '%s'", tt.expectedError, err.Error())
+			}
+
+			// Verify it's a NotFoundError
+			var nfe *NotFoundError
+			if !errors.As(err, &nfe) {
+				t.Error("errors.As should return true for NotFoundError")
+			}
+
+			notFoundErr, ok := err.(*NotFoundError)
+			if !ok {
+				t.Fatal("expected *NotFoundError type")
+			}
+			if notFoundErr.Resource != tt.resource {
+				t.Errorf("expected resource '%s', got '%s'", tt.resource, notFoundErr.Resource)
+			}
+			if notFoundErr.ID != tt.id {
+				t.Errorf("expected id '%v', got '%v'", tt.id, notFoundErr.ID)
+			}
+		})
+	}
+}
+
+// TestNewNotFoundError_ErrorMethod tests NotFoundError Error() method output
+func TestNewNotFoundError_ErrorMethod(t *testing.T) {
+	err := NewNotFoundError("traveller", 456)
+	nfeErr := err.(*NotFoundError)
+
+	if nfeErr.Resource != "traveller" {
+		t.Errorf("expected resource 'traveller', got '%s'", nfeErr.Resource)
+	}
+	if nfeErr.ID != 456 {
+		t.Errorf("expected id 456, got %v", nfeErr.ID)
+	}
+
+	expectedMsg := "traveller with id '456' not found"
+	if err.Error() != expectedMsg {
+		t.Errorf("expected '%s', got '%s'", expectedMsg, err.Error())
+	}
+}
+
+// TestNewConflictError_Success tests ConflictError creation
+func TestNewConflictError_Success(t *testing.T) {
+	tests := []struct {
+		name          string
+		message       string
+		expectedError string
+	}{
+		{
+			name:          "duplicate email",
+			message:       "email already exists",
+			expectedError: "email already exists",
+		},
+		{
+			name:          "username conflict",
+			message:       "username is already taken",
+			expectedError: "username is already taken",
+		},
+		{
+			name:          "resource exists",
+			message:       "resource with the same name already exists",
+			expectedError: "resource with the same name already exists",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewConflictError(tt.message)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			if err.Error() != tt.expectedError {
+				t.Errorf("expected error message '%s', got '%s'", tt.expectedError, err.Error())
+			}
+
+			// Verify it's a ConflictError
+			var ce *ConflictError
+			if !errors.As(err, &ce) {
+				t.Error("errors.As should return true for ConflictError")
+			}
+
+			conflictErr, ok := err.(*ConflictError)
+			if !ok {
+				t.Fatal("expected *ConflictError type")
+			}
+			if conflictErr.Message != tt.message {
+				t.Errorf("expected message '%s', got '%s'", tt.message, conflictErr.Message)
+			}
+		})
+	}
+}
+
+// TestNewConflictError_ErrorMethod tests ConflictError Error() method
+func TestNewConflictError_ErrorMethod(t *testing.T) {
+	message := "duplicate key value violates unique constraint"
+	err := NewConflictError(message)
+
+	if err.Error() != message {
+		t.Errorf("expected '%s', got '%s'", message, err.Error())
+	}
+}
+
+// TestNewAuthenticationError_Success tests AuthenticationError creation
+func TestNewAuthenticationError_Success(t *testing.T) {
+	tests := []struct {
+		name          string
+		message       string
+		expectedError string
+	}{
+		{
+			name:          "token expired",
+			message:       "authentication token has expired",
+			expectedError: "authentication token has expired",
+		},
+		{
+			name:          "unauthorized access",
+			message:       "unauthorized access to resource",
+			expectedError: "unauthorized access to resource",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewAuthenticationError(tt.message)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			if err.Error() != tt.expectedError {
+				t.Errorf("expected error message '%s', got '%s'", tt.expectedError, err.Error())
+			}
+
+			// Verify it's an AuthenticationError
+			var ae *AuthenticationError
+			if !errors.As(err, &ae) {
+				t.Error("errors.As should return true for AuthenticationError")
+			}
+
+			authErr, ok := err.(*AuthenticationError)
+			if !ok {
+				t.Fatal("expected *AuthenticationError type")
+			}
+			if authErr.Message != tt.message {
+				t.Errorf("expected message '%s', got '%s'", tt.message, authErr.Message)
+			}
+		})
+	}
+}
+
+// TestNewAuthenticationError_ErrorMethod tests AuthenticationError Error() method
+func TestNewAuthenticationError_ErrorMethod(t *testing.T) {
+	message := "missing or invalid authorization header"
+	err := NewAuthenticationError(message)
+
+	if err.Error() != message {
+		t.Errorf("expected '%s', got '%s'", message, err.Error())
+	}
+}
+
+// TestErrorTypes_Differentiation tests that different error types are distinct
+func TestErrorTypes_Differentiation(t *testing.T) {
+	notFoundErr := NewNotFoundError("user", 123)
+	conflictErr := NewConflictError("duplicate entry")
+	authErr := NewAuthenticationError("invalid credentials")
+	validationErr := NewValidationError([]FieldError{{Field: "email", Message: "required"}})
+
+	// Test that each error is its correct type
+	var nfe *NotFoundError
+	var ce *ConflictError
+	var ae *AuthenticationError
+	var ve *ValidationError
+
+	if !errors.As(notFoundErr, &nfe) {
+		t.Error("notFoundErr should be NotFoundError")
+	}
+	if !errors.As(conflictErr, &ce) {
+		t.Error("conflictErr should be ConflictError")
+	}
+	if !errors.As(authErr, &ae) {
+		t.Error("authErr should be AuthenticationError")
+	}
+	if !errors.As(validationErr, &ve) {
+		t.Error("validationErr should be ValidationError")
+	}
+
+	// Test that errors are not confused with each other
+	if errors.As(notFoundErr, &ce) {
+		t.Error("notFoundErr should not be ConflictError")
+	}
+	if errors.As(conflictErr, &ae) {
+		t.Error("conflictErr should not be AuthenticationError")
+	}
+	if errors.As(authErr, &ve) {
+		t.Error("authErr should not be ValidationError")
+	}
+}

@@ -342,3 +342,303 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 		})
 	}
 }
+
+// TestOk_SuccessResponse tests the Ok() response helper
+func TestOk_SuccessResponse(t *testing.T) {
+	e := setupTestEcho()
+
+	type ResponseData struct {
+		ID    int    `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	tests := []struct {
+		name     string
+		data     ResponseData
+		wantCode int
+	}{
+		{
+			name:     "returns single item",
+			data:     ResponseData{ID: 1, Name: "John", Email: "john@example.com"},
+			wantCode: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := Ok(ctx, tt.data)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, rec.Code)
+
+			var response DataResponse[ResponseData]
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.data.ID, response.Data.ID)
+			assert.Equal(t, tt.data.Name, response.Data.Name)
+		})
+	}
+}
+
+// TestCreated_CreatedResponse tests the Created() response helper
+func TestCreated_CreatedResponse(t *testing.T) {
+	e := setupTestEcho()
+
+	type CreateData struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
+	tests := []struct {
+		name       string
+		data       CreateData
+		location   string
+		wantCode   int
+		wantHeader string
+	}{
+		{
+			name:       "returns created resource with location header",
+			data:       CreateData{ID: 1, Name: "NewItem"},
+			location:   "/items/1",
+			wantCode:   http.StatusCreated,
+			wantHeader: "/items/1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := Created(ctx, tt.data, tt.location)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, rec.Code)
+			assert.Equal(t, tt.wantHeader, rec.Header().Get("Location"))
+
+			var response DataResponse[CreateData]
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.data.ID, response.Data.ID)
+		})
+	}
+}
+
+// TestNoContent_NoContentResponse tests the NoContent() response helper
+func TestNoContent_NoContentResponse(t *testing.T) {
+	e := setupTestEcho()
+
+	t.Run("returns no content status", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodDelete, "/test", nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		err := NoContent(ctx)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+		assert.Empty(t, rec.Body.String())
+	})
+}
+
+// TestNotFound_NotFoundResponse tests the NotFound() response helper
+func TestNotFound_NotFoundResponse(t *testing.T) {
+	e := setupTestEcho()
+
+	tests := []struct {
+		name     string
+		message  string
+		wantCode int
+	}{
+		{
+			name:     "returns not found with message",
+			message:  "resource not found",
+			wantCode: http.StatusNotFound,
+		},
+		{
+			name:     "returns not found with custom message",
+			message:  "user with id 123 not found",
+			wantCode: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := NotFound(ctx, tt.message)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, rec.Code)
+
+			var response ErrorResponse
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.message, response.Message)
+		})
+	}
+}
+
+// TestInternalError_InternalServerErrorResponse tests the InternalError() response helper
+func TestInternalError_InternalServerErrorResponse(t *testing.T) {
+	e := setupTestEcho()
+
+	tests := []struct {
+		name     string
+		message  string
+		wantCode int
+	}{
+		{
+			name:     "returns internal server error",
+			message:  "internal server error",
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "returns with custom error message",
+			message:  "database connection failed",
+			wantCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := InternalError(ctx, tt.message)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, rec.Code)
+
+			var response ErrorResponse
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.message, response.Message)
+		})
+	}
+}
+
+// TestResponseError_CustomHTTPStatus tests the ResponseError() response helper
+func TestResponseError_CustomHTTPStatus(t *testing.T) {
+	e := setupTestEcho()
+
+	tests := []struct {
+		name       string
+		httpStatus int
+		message    string
+	}{
+		{
+			name:       "returns custom HTTP status",
+			httpStatus: http.StatusForbidden,
+			message:    "access forbidden",
+		},
+		{
+			name:       "returns service unavailable",
+			httpStatus: http.StatusServiceUnavailable,
+			message:    "service temporarily unavailable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := ResponseError(ctx, tt.httpStatus, tt.message)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.httpStatus, rec.Code)
+
+			var response ErrorResponse
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.message, response.Message)
+		})
+	}
+}
+
+// TestHandleServiceError_ErrorTypes tests HandleServiceError with various error types
+func TestHandleServiceError_ErrorTypes(t *testing.T) {
+	e := setupTestEcho()
+
+	tests := []struct {
+		name              string
+		err               error
+		operation         string
+		expectedStatus    int
+		expectedMsg       string
+		assertMsgContains bool // if true, use Contains instead of Equal
+	}{
+		{
+			name:              "handles NotFoundError from service",
+			err:               domain.NewNotFoundError("user", 123),
+			operation:         "get user",
+			expectedStatus:    http.StatusNotFound,
+			expectedMsg:       "not found",
+			assertMsgContains: true,
+		},
+		{
+			name:           "handles ConflictError from service",
+			err:            domain.NewConflictError("email already exists"),
+			operation:      "create user",
+			expectedStatus: http.StatusConflict,
+			expectedMsg:    "email already exists",
+		},
+		{
+			name:           "handles AuthenticationError from service",
+			err:            domain.NewAuthenticationError("invalid credentials"),
+			operation:      "login",
+			expectedStatus: http.StatusUnauthorized,
+			expectedMsg:    "invalid credentials",
+		},
+		{
+			name:           "handles generic error as internal server error",
+			err:            errors.New("database connection failed"),
+			operation:      "fetch data",
+			expectedStatus: http.StatusInternalServerError,
+			expectedMsg:    "", // Message will be non-empty but not predictable
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			responseErr := HandleServiceError(ctx, tt.err, tt.operation)
+			require.NoError(t, responseErr)
+
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			var response ErrorResponse
+			err := json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			if tt.expectedMsg != "" {
+				if tt.assertMsgContains {
+					assert.Contains(t, response.Message, tt.expectedMsg)
+				} else {
+					assert.Equal(t, tt.expectedMsg, response.Message)
+				}
+			} else {
+				assert.NotEmpty(t, response.Message)
+			}
+		})
+	}
+}
