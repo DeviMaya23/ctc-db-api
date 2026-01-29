@@ -74,9 +74,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			args: args{"1"},
 			want: want{
 				traveller: traveller,
-				responseBody: controller.StandardAPIResponse{
-					Message: "success",
-					Data:    domain.ToTravellerResponse(traveller),
+				responseBody: controller.DataResponse[domain.TravellerResponse]{
+					Data: domain.ToTravellerResponse(traveller),
 				},
 				statusCode: http.StatusOK,
 			},
@@ -91,9 +90,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			args: args{""},
 			want: want{
 				traveller: traveller,
-				responseBody: controller.StandardAPIResponse{
-					Message: "error validation",
-					Errors:  "id not found",
+				responseBody: controller.ErrorResponse{
+					Message: "invalid id parameter",
 				},
 				statusCode: http.StatusBadRequest,
 			},
@@ -178,9 +176,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			name: "success create traveller",
 			args: args{req},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "success",
-					Data:    domain.ToTravellerResponse(createdTraveller),
+				responseBody: controller.DataResponse[domain.TravellerResponse]{
+					Data: domain.ToTravellerResponse(createdTraveller),
 				},
 				statusCode: http.StatusCreated,
 			},
@@ -207,9 +204,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Create() {
 			name: "failed create",
 			args: args{req},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error create data",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -258,7 +254,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 
 	updateRequest := domain.UpdateTravellerRequest{
 		Name:      "Fiore",
-		Rarity:    6,
+		Rarity:    4,
 		Influence: constants.InfluencePower,
 		Job:       constants.JobMerchant,
 	}
@@ -266,7 +262,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 	updatedTraveller := &domain.Traveller{
 		CommonModel: domain.CommonModel{ID: 1},
 		Name:        "Fiore",
-		Rarity:      6,
+		Rarity:      4,
 		InfluenceID: constants.GetInfluenceID(constants.InfluencePower),
 		Influence:   domain.Influence{Name: constants.InfluencePower},
 		JobID:       constants.GetJobID(constants.JobMerchant),
@@ -283,9 +279,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "success update traveller",
 			args: args{"1", updateRequest, nil},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "success",
-					Data:    domain.ToTravellerResponse(updatedTraveller),
+				responseBody: controller.DataResponse[domain.TravellerResponse]{
+					Data: domain.ToTravellerResponse(updatedTraveller),
 				},
 				statusCode: http.StatusOK,
 			},
@@ -312,9 +307,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "failed invalid id",
 			args: args{"", domain.UpdateTravellerRequest{}, nil},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error validation",
-					Errors:  "id not found",
+				responseBody: controller.ErrorResponse{
+					Message: "invalid id parameter",
 				},
 				statusCode: http.StatusBadRequest,
 			},
@@ -330,9 +324,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Update() {
 			name: "failed update",
 			args: args{"1", updateRequest, nil},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error update data",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -407,9 +400,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			name: "failed invalid id",
 			args: args{""},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error validation",
-					Errors:  "id not found",
+				responseBody: controller.ErrorResponse{
+					Message: "invalid id parameter",
 				},
 				statusCode: http.StatusBadRequest,
 			},
@@ -418,9 +410,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_Delete() {
 			name: "failed delete",
 			args: args{"1"},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error delete data",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},
@@ -562,9 +553,8 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetList() {
 				queryParams: map[string]string{},
 			},
 			want: want{
-				responseBody: controller.StandardAPIResponse{
-					Message: "error get data",
-					Errors:  nil,
+				responseBody: controller.ErrorResponse{
+					Message: "internal server error",
 				},
 				statusCode: http.StatusInternalServerError,
 			},

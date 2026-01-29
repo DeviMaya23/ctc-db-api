@@ -33,7 +33,7 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 
 	err := ctx.Bind(&request)
 	if err != nil {
-		return controller.ResponseError(ctx, http.StatusBadRequest, "error binding", err.Error())
+		return controller.ResponseError(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	err = ctx.Validate(&request)
@@ -46,5 +46,5 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 		return controller.HandleServiceError(ctx, err, "login")
 	}
 
-	return controller.Ok(ctx, "success", res, nil)
+	return controller.Ok(ctx, res)
 }

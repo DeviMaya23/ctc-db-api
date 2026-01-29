@@ -16,6 +16,9 @@ import (
 )
 
 func TestTravellerRepository_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	ctx := context.Background()
 
 	connStr := helpers.GetTestDB(t)

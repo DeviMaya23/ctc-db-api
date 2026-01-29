@@ -13,35 +13,34 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type StandardAPIResponse struct {
-	Message  string      `json:"message"`
-	Data     interface{} `json:"data"`
-	Errors   interface{} `json:"errors"`
-	Metadata interface{} `json:"metadata"`
+type DataResponse[T any] struct {
+	Data T `json:"data"`
 }
 
-type ValidationErrorFields struct {
+type ErrorResponse struct {
+	Message string       `json:"message"`
+	Errors  []FieldError `json:"errors,omitempty"`
+}
+
+type FieldError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-// Ok returns 200 OK status with data and optional metadata
-func Ok(ctx echo.Context, message string, data, metadata interface{}) error {
-	return ctx.JSON(http.StatusOK, StandardAPIResponse{
-		Message:  message,
-		Data:     data,
-		Metadata: metadata,
+// Ok returns 200 OK status with data
+func Ok[T any](ctx echo.Context, data T) error {
+	return ctx.JSON(http.StatusOK, DataResponse[T]{
+		Data: data,
 	})
 }
 
 // Created returns 201 Created status with Location header
-func Created(ctx echo.Context, message string, data interface{}, location string) error {
+func Created[T any](ctx echo.Context, data T, location string) error {
 	if location != "" {
 		ctx.Response().Header().Set("Location", location)
 	}
-	return ctx.JSON(http.StatusCreated, StandardAPIResponse{
-		Message: message,
-		Data:    data,
+	return ctx.JSON(http.StatusCreated, DataResponse[T]{
+		Data: data,
 	})
 }
 
@@ -52,30 +51,28 @@ func NoContent(ctx echo.Context) error {
 
 // NotFound returns 404 Not Found status
 func NotFound(ctx echo.Context, message string) error {
-	return ctx.JSON(http.StatusNotFound, StandardAPIResponse{
+	return ctx.JSON(http.StatusNotFound, ErrorResponse{
 		Message: message,
 	})
 }
 
 // InternalError returns 500 Internal Server Error status
-func InternalError(ctx echo.Context, message string, errorData interface{}) error {
-	return ctx.JSON(http.StatusInternalServerError, StandardAPIResponse{
+func InternalError(ctx echo.Context, message string) error {
+	return ctx.JSON(http.StatusInternalServerError, ErrorResponse{
 		Message: message,
-		Errors:  errorData,
 	})
 }
 
 // ResponseError returns a JSON response with the specified HTTP status
-func ResponseError(ctx echo.Context, httpStatus int, message string, errorData interface{}) error {
-	return ctx.JSON(httpStatus, StandardAPIResponse{
+func ResponseError(ctx echo.Context, httpStatus int, message string) error {
+	return ctx.JSON(httpStatus, ErrorResponse{
 		Message: message,
-		Errors:  errorData,
 	})
 }
 
 // ResponseErrorValidation returns 400 Bad Request with validation error details
 func ResponseErrorValidation(ctx echo.Context, err error) error {
-	var errMsg []ValidationErrorFields
+	var errMsg []FieldError
 
 	// Handle go-playground validator errors (from ctx.Validate)
 	if castedObject, ok := err.(validator.ValidationErrors); ok {
@@ -84,7 +81,7 @@ func ResponseErrorValidation(ctx echo.Context, err error) error {
 		translator, _ := validate.Translator.FindTranslator(language)
 
 		for _, e := range castedObject {
-			errMsg = append(errMsg, ValidationErrorFields{
+			errMsg = append(errMsg, FieldError{
 				Field:   strcase.ToSnake(e.Field()),
 				Message: e.Translate(translator),
 			})
@@ -92,21 +89,21 @@ func ResponseErrorValidation(ctx echo.Context, err error) error {
 	} else if validationErr, ok := err.(*domain.ValidationError); ok {
 		// Handle domain ValidationError from services
 		for _, fieldErr := range validationErr.Errors {
-			errMsg = append(errMsg, ValidationErrorFields{
+			errMsg = append(errMsg, FieldError{
 				Field:   strcase.ToSnake(fieldErr.Field),
 				Message: fieldErr.Message,
 			})
 		}
 	} else {
 		// Fallback for unknown validation error types
-		errMsg = append(errMsg, ValidationErrorFields{
+		errMsg = append(errMsg, FieldError{
 			Field:   "general",
 			Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(http.StatusBadRequest, StandardAPIResponse{
-		Message: "error validation",
+	return ctx.JSON(http.StatusBadRequest, ErrorResponse{
+		Message: "validation failed",
 		Errors:  errMsg,
 	})
 }
@@ -125,12 +122,12 @@ func HandleServiceError(ctx echo.Context, err error, operation string) error {
 
 	var ce *domain.ConflictError
 	if errors.As(err, &ce) {
-		return ResponseError(ctx, http.StatusConflict, "error "+operation, ce.Message)
+		return ResponseError(ctx, http.StatusConflict, ce.Message)
 	}
 
 	var ae *domain.AuthenticationError
 	if errors.As(err, &ae) {
-		return ResponseError(ctx, http.StatusUnauthorized, "error "+operation, ae.Message)
+		return ResponseError(ctx, http.StatusUnauthorized, ae.Message)
 	}
 
 	var ve *domain.ValidationError
@@ -139,5 +136,5 @@ func HandleServiceError(ctx echo.Context, err error, operation string) error {
 	}
 
 	// Unmapped errors - return 500
-	return InternalError(ctx, "error "+operation, nil)
+	return InternalError(ctx, "internal server error")
 }

@@ -41,10 +41,6 @@ func (s *userService) Login(ctx context.Context, req domain.LoginRequest) (res d
 	)
 	defer telemetry.EndSpanWithError(span, err)
 
-	s.logger.WithContext(ctx).Info("login attempt",
-		zap.String("user.username", req.Username),
-	)
-
 	// Always run bcrypt comparison to prevent timing-based username enumeration
 	user, err := s.userRepo.GetByUsername(ctx, req.Username)
 	dummyHash := "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy" // bcrypt hash of "dummy"

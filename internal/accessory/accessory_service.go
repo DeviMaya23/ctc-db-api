@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 )
 
 type AccessoryRepository interface {
@@ -45,28 +44,10 @@ func (s *accessoryService) GetList(ctx context.Context, filter domain.ListAccess
 		filter.OrderDir = strings.ToUpper(filter.OrderDir)
 	}
 
-	s.logger.WithContext(ctx).Info("fetching accessory list",
-		zap.Int("page", params.Page),
-		zap.Int("page_size", params.PageSize),
-		zap.String("filter.owner", filter.Owner),
-		zap.String("filter.effect", filter.Effect),
-		zap.String("order_by", filter.OrderBy),
-		zap.String("order_dir", filter.OrderDir),
-	)
-
 	accessories, ownerNames, total, err := s.accessoryRepo.GetList(ctx, filter, params.Offset(), params.PageSize)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to fetch accessory list",
-			zap.String("error.type", "repository_error"),
-			zap.String("error.message", err.Error()),
-		)
 		return
 	}
-
-	s.logger.WithContext(ctx).Info("accessory list fetched successfully",
-		zap.Int64("total", total),
-		zap.Int("returned", len(accessories)),
-	)
 
 	// Map to response DTOs
 	items := make([]domain.AccessoryListItemResponse, len(accessories))
