@@ -10,10 +10,10 @@ import (
 
 	_ "lizobly/ctc-db-api/docs"
 	"lizobly/ctc-db-api/internal/accessory"
+	internalJWT "lizobly/ctc-db-api/internal/jwt"
 	"lizobly/ctc-db-api/internal/traveller"
 	"lizobly/ctc-db-api/internal/user"
 	"lizobly/ctc-db-api/pkg/helpers"
-	pkgJWT "lizobly/ctc-db-api/pkg/jwt"
 	"lizobly/ctc-db-api/pkg/logging"
 	pkgMiddleware "lizobly/ctc-db-api/pkg/middleware"
 	"lizobly/ctc-db-api/pkg/telemetry"
@@ -152,7 +152,8 @@ func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 
 	// Setup middleware
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
-	e.Use(pkgMiddleware.RequestIDMiddleware(logger))
+	e.Use(pkgMiddleware.RequestIDMiddleware())
+	e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
 
 	// Setup Swagger
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -193,7 +194,7 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 			zap.String("jwt.timeout", jwtTimeoutStr),
 			zap.Error(err))
 	}
-	tokenService := pkgJWT.NewTokenService(jwtSecretKey, jwtTimeout, logger)
+	tokenService := internalJWT.NewTokenService(jwtSecretKey, jwtTimeout, logger)
 
 	// Initialize repositories
 	travellerRepo := traveller.NewTravellerRepository(db, logger)
