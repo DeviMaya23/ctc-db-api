@@ -24,22 +24,22 @@ func (Traveller) TableName() string {
 }
 
 type CreateTravellerRequest struct {
-	Name        string                  `json:"name" validate:"required,lte=50"`
-	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5"`
-	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
-	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
-	Influence   string                  `json:"influence" validate:"required,influence"`
-	Job         string                  `json:"job" validate:"required,job"`
+	Name        string                  `json:"name" validate:"required,lte=50" example:"Viola"`
+	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5" example:"5"`
+	Banner      string                  `json:"banner" validate:"omitempty,lte=50" example:"Standard Banner"`
+	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006" example:"01-10-2024"`
+	Influence   string                  `json:"influence" validate:"required,influence" example:"Wind"`
+	Job         string                  `json:"job" validate:"required,job" example:"Dancer"`
 	Accessory   *CreateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
 
 type UpdateTravellerRequest struct {
-	Name        string                  `json:"name" validate:"required,lte=50"`
-	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5"`
-	Banner      string                  `json:"banner" validate:"omitempty,lte=50"`
-	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006"`
-	Influence   string                  `json:"influence" validate:"required,influence"`
-	Job         string                  `json:"job" validate:"required,job"`
+	Name        string                  `json:"name" validate:"required,lte=50" example:"Viola"`
+	Rarity      int                     `json:"rarity" validate:"required,gte=1,lte=5" example:"5"`
+	Banner      string                  `json:"banner" validate:"omitempty,lte=50" example:"Standard Banner"`
+	ReleaseDate string                  `json:"release_date" validate:"omitempty,datetime=02-01-2006" example:"01-10-2024"`
+	Influence   string                  `json:"influence" validate:"required,influence" example:"Wind"`
+	Job         string                  `json:"job" validate:"required,job" example:"Dancer"`
 	Accessory   *UpdateAccessoryRequest `json:"accessory" validate:"omitempty"`
 }
 
@@ -65,12 +65,12 @@ type TravellerListItemResponse struct {
 }
 
 type TravellerResponse struct {
-	Name        string             `json:"name"`
-	Rarity      int                `json:"rarity"`
-	Banner      string             `json:"banner"`
-	ReleaseDate string             `json:"release_date"`
-	Influence   string             `json:"influence"`
-	Job         string             `json:"job"`
+	Name        string             `json:"name" example:"Viola"`
+	Rarity      int                `json:"rarity" example:"5"`
+	Banner      string             `json:"banner" example:"Standard Banner"`
+	ReleaseDate string             `json:"release_date" example:"01-10-2024"`
+	Influence   string             `json:"influence" example:"Wind"`
+	Job         string             `json:"job" example:"Dancer"`
 	Accessory   *AccessoryResponse `json:"accessory,omitempty"`
 }
 

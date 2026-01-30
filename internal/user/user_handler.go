@@ -27,6 +27,19 @@ func NewUserHandler(e *echo.Group, svc UserService) *UserHandler {
 	return handler
 }
 
+// Login godoc
+//
+//	@Summary		User login
+//	@Description	authenticate user and receive JWT token
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		domain.LoginRequest	true	"Login credentials"
+//	@Success		200	{object}	controller.DataResponse[domain.LoginResponse]
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		401	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/login [post]
 func (h *UserHandler) Login(ctx echo.Context) error {
 
 	var request domain.LoginRequest

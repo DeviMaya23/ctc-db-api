@@ -29,12 +29,18 @@ import (
 
 //	@title			CTC DB API
 //	@version		1.0
+//	@description	REST API for managing CTC game database including travellers (characters), accessories (equipment), and user authentication.
 //	@termsOfService	http://swagger.io/terms/
 
 //	@contact.name	Liz
 //	@contact.email	j2qgehn84@mozmail.com
 
-// @BasePath	/api/v1
+//	@BasePath	/api/v1
+
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Type "Bearer " followed by your JWT token (include the word Bearer and a space before the token)
 func main() {
 	// Load environment variables
 	if err := godotenv.Load("config.env"); err != nil {

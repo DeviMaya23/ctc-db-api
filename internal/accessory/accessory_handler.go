@@ -43,8 +43,8 @@ func NewAccessoryHandler(e *echo.Group, svc AccessoryService) *AccessoryHandler 
 //	@Param			page			query	int		false	"Page number (default 1)"
 //	@Param			page_size		query	int		false	"Page size (default 10, max 100)"
 //	@Success		200	{object}	helpers.PaginatedResponse[domain.AccessoryListItemResponse]
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/accessories [get]
 func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListAccessoryRequest

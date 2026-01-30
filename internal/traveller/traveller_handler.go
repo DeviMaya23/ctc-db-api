@@ -43,7 +43,7 @@ func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler 
 //
 //	@Summary		Get list
 //	@Description	get traveller list with optional filters and pagination
-//	@Tags			accounts
+//	@Tags			travellers
 //	@Accept			json
 //	@Produce		json
 //	@Param			name		query	string	false	"Filter by name (case insensitive)"
@@ -52,9 +52,10 @@ func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler 
 //	@Param			page		query	int		false	"Page number (default 1)"
 //	@Param			page_size	query	int		false	"Page size (default 10, max 100)"
 //	@Success		200	{object}	helpers.PaginatedResponse[domain.TravellerListItemResponse]
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/travellers [get]
+//	@Security		BearerAuth
 func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListTravellerRequest
 	err := ctx.Bind(&filter)
@@ -88,15 +89,18 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 //
 //	@Summary		Get by ID
 //	@Description	get traveller information by ID
-//	@Tags			accounts
+//	@Tags			travellers
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Account ID"
-//	@Success		200	{object}	domain.Traveller
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		404	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Success		200	{object}	domain.TravellerResponse
+//	@Header			200	{string}	ETag	"Entity tag for caching"
+//	@Header			200	{string}	Last-Modified	"Last modified timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/travellers/{id} [get]
+//	@Security		BearerAuth
 func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -117,6 +121,23 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	return controller.Ok(ctx, response)
 }
 
+// Create godoc
+//
+//	@Summary		Create traveller
+//	@Description	create a new traveller with optional accessory
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		domain.CreateTravellerRequest	true	"Traveller data"
+//	@Success		201	{object}	domain.TravellerResponse
+//	@Header			201	{string}	Location	"URI of the created resource"
+//	@Header			201	{string}	ETag	"Entity tag for caching"
+//	@Header			201	{string}	Last-Modified	"Last modified timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		409	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers [post]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	var newTraveller domain.CreateTravellerRequest
@@ -149,6 +170,25 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 	return controller.Created(ctx, response, location)
 }
 
+// Update godoc
+//
+//	@Summary		Update traveller
+//	@Description	update an existing traveller by ID with optimistic locking support via If-Match header
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Param			body	body		domain.UpdateTravellerRequest	true	"Updated traveller data"
+//	@Param			If-Match	header	string	false	"ETag for optimistic locking"
+//	@Success		200	{object}	domain.TravellerResponse
+//	@Header			200	{string}	ETag	"Updated entity tag"
+//	@Header			200	{string}	Last-Modified	"Updated timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		412	{object}	controller.ErrorResponse	"Precondition Failed - resource was modified"
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers/{id} [put]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Update(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -198,6 +238,20 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 	return controller.Ok(ctx, response)
 }
 
+// Delete godoc
+//
+//	@Summary		Delete traveller
+//	@Description	soft delete a traveller by ID
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers/{id} [delete]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Delete(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
