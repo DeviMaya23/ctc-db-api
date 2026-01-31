@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -63,14 +64,29 @@ func main() {
 	// Initialize application
 	app := initApplication(db, logger)
 
-	// Start server
+	// Configure server with timeouts
 	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
+	requestTimeoutStr := helpers.EnvWithDefault("REQUEST_TIMEOUT", "30s")
+	requestTimeout, _ := time.ParseDuration(requestTimeoutStr)
+	writeTimeout := requestTimeout + (5 * time.Second) // Add buffer for response writing
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      app,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: writeTimeout,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// Start server
 	logger.Info("starting server",
 		zap.String("service.name", "ctc-db-api"),
 		zap.String("environment", env),
 		zap.String("address", addr),
+		zap.Duration("request.timeout", requestTimeout),
+		zap.Duration("write.timeout", writeTimeout),
 	)
-	app.Logger.Fatal(app.Start(addr))
+	app.Logger.Fatal(server.ListenAndServe())
 }
 
 func initLogger(env string) *logging.Logger {
@@ -139,6 +155,12 @@ func initDatabase(logger *logging.Logger) (*gorm.DB, *sql.DB) {
 			zap.String("db.host", dbHost))
 	}
 
+	// Configure connection pool
+	dbConn.SetMaxIdleConns(10)
+	dbConn.SetMaxOpenConns(100)
+	dbConn.SetConnMaxLifetime(time.Hour)
+	dbConn.SetConnMaxIdleTime(10 * time.Minute)
+
 	logger.Info("database connected",
 		zap.String("db.system", "postgres"),
 		zap.String("db.host", dbHost),
@@ -156,9 +178,19 @@ func closeDatabase(dbConn *sql.DB, logger *logging.Logger) {
 func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 	e := echo.New()
 
+	// Load request timeout configuration
+	requestTimeoutStr := helpers.EnvWithDefault("REQUEST_TIMEOUT", "30s")
+	requestTimeout, err := time.ParseDuration(requestTimeoutStr)
+	if err != nil {
+		logger.Fatal("Invalid REQUEST_TIMEOUT format",
+			zap.String("request.timeout", requestTimeoutStr),
+			zap.Error(err))
+	}
+
 	// Setup middleware
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
 	e.Use(pkgMiddleware.RequestIDMiddleware())
+	e.Use(pkgMiddleware.TimeoutMiddleware(requestTimeout, logger))
 	e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
 
 	// Setup Swagger

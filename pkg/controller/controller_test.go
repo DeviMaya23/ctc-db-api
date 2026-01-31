@@ -607,6 +607,13 @@ func TestHandleServiceError_ErrorTypes(t *testing.T) {
 			expectedMsg:    "invalid credentials",
 		},
 		{
+			name:           "handles TimeoutError from service",
+			err:            domain.NewTimeoutError("request timeout"),
+			operation:      "fetch data",
+			expectedStatus: http.StatusRequestTimeout,
+			expectedMsg:    "request timeout",
+		},
+		{
 			name:           "handles generic error as internal server error",
 			err:            errors.New("database connection failed"),
 			operation:      "fetch data",
@@ -639,6 +646,47 @@ func TestHandleServiceError_ErrorTypes(t *testing.T) {
 			} else {
 				assert.NotEmpty(t, response.Message)
 			}
+		})
+	}
+}
+
+// TestRequestTimeout_Response tests the RequestTimeout() response helper
+func TestRequestTimeout_Response(t *testing.T) {
+	e := setupTestEcho()
+
+	tests := []struct {
+		name     string
+		message  string
+		wantCode int
+	}{
+		{
+			name:     "returns request timeout with message",
+			message:  "request timeout",
+			wantCode: http.StatusRequestTimeout,
+		},
+		{
+			name:     "returns request timeout with custom message",
+			message:  "operation exceeded time limit",
+			wantCode: http.StatusRequestTimeout,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			rec := httptest.NewRecorder()
+			ctx := e.NewContext(req, rec)
+
+			err := RequestTimeout(ctx, tt.message)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, rec.Code)
+
+			var response ErrorResponse
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.message, response.Message)
 		})
 	}
 }

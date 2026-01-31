@@ -80,3 +80,17 @@ func (e *AuthenticationError) Error() string {
 func NewAuthenticationError(message string) error {
 	return &AuthenticationError{Message: message}
 }
+
+// TimeoutError represents a request timeout
+type TimeoutError struct {
+	Message string
+}
+
+func (e *TimeoutError) Error() string {
+	return e.Message
+}
+
+// NewTimeoutError creates a new TimeoutError
+func NewTimeoutError(message string) error {
+	return &TimeoutError{Message: message}
+}

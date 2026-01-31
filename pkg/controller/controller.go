@@ -63,6 +63,13 @@ func InternalError(ctx echo.Context, message string) error {
 	})
 }
 
+// RequestTimeout returns 408 Request Timeout status
+func RequestTimeout(ctx echo.Context, message string) error {
+	return ctx.JSON(http.StatusRequestTimeout, ErrorResponse{
+		Message: message,
+	})
+}
+
 // ResponseError returns a JSON response with the specified HTTP status
 func ResponseError(ctx echo.Context, httpStatus int, message string) error {
 	return ctx.JSON(httpStatus, ErrorResponse{
@@ -133,6 +140,11 @@ func HandleServiceError(ctx echo.Context, err error, operation string) error {
 	var ve *domain.ValidationError
 	if errors.As(err, &ve) {
 		return ResponseErrorValidation(ctx, err)
+	}
+
+	var te *domain.TimeoutError
+	if errors.As(err, &te) {
+		return RequestTimeout(ctx, te.Message)
 	}
 
 	// Unmapped errors - return 500
