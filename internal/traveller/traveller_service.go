@@ -9,7 +9,6 @@ import (
 	"lizobly/ctc-db-api/pkg/telemetry"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 )
 
 type TravellerRepository interface {
@@ -91,12 +90,11 @@ func (s *travellerService) Create(ctx context.Context, input domain.CreateTravel
 	// Parse release date
 	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to parse release date",
-			zap.String("release_date", input.ReleaseDate),
-			zap.String("error.type", "parsing_error"),
-			zap.String("error.message", err.Error()),
-		)
-		return 0, err
+		return 0, &domain.ValidationError{
+			Errors: []domain.FieldError{
+				{Field: "release_date", Message: "invalid date format"},
+			},
+		}
 	}
 
 	// Build traveller domain object
@@ -145,12 +143,11 @@ func (s *travellerService) Update(ctx context.Context, id int, input domain.Upda
 	// Parse release date
 	releaseDate, err := helpers.ParseDate(input.ReleaseDate, constants.DateFormat)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to parse release date",
-			zap.String("release_date", input.ReleaseDate),
-			zap.String("error.type", "parsing_error"),
-			zap.String("error.message", err.Error()),
-		)
-		return err
+		return &domain.ValidationError{
+			Errors: []domain.FieldError{
+				{Field: "release_date", Message: "invalid date format"},
+			},
+		}
 	}
 
 	// Build traveller domain object

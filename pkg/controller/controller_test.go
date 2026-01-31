@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/logging"
 	pkgValidator "lizobly/ctc-db-api/pkg/validator"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,11 @@ func setupTestEcho() *echo.Echo {
 	customValidator, _ := pkgValidator.NewValidator()
 	e.Validator = customValidator
 	return e
+}
+
+func setupTestLogger() *logging.Logger {
+	logger, _ := logging.NewDevelopmentLogger()
+	return logger
 }
 
 func TestResponseErrorValidation_GoPlaygroundValidator(t *testing.T) {
@@ -324,7 +330,7 @@ func TestHandleServiceError_ValidationError(t *testing.T) {
 			ctx := e.NewContext(req, rec)
 
 			// Call HandleServiceError which should delegate to ResponseErrorValidation
-			responseErr := HandleServiceError(ctx, tt.err, tt.operation)
+			responseErr := HandleServiceError(ctx, tt.err, tt.operation, setupTestLogger())
 			require.NoError(t, responseErr)
 
 			// Check HTTP status
@@ -586,7 +592,7 @@ func TestHandleServiceError_ErrorTypes(t *testing.T) {
 	}{
 		{
 			name:              "handles NotFoundError from service",
-			err:               domain.NewNotFoundError("user", 123),
+			err:               domain.NewNotFoundError("user", 123, nil),
 			operation:         "get user",
 			expectedStatus:    http.StatusNotFound,
 			expectedMsg:       "not found",
@@ -594,21 +600,21 @@ func TestHandleServiceError_ErrorTypes(t *testing.T) {
 		},
 		{
 			name:           "handles ConflictError from service",
-			err:            domain.NewConflictError("email already exists"),
+			err:            domain.NewConflictError("email already exists", nil),
 			operation:      "create user",
 			expectedStatus: http.StatusConflict,
 			expectedMsg:    "email already exists",
 		},
 		{
 			name:           "handles AuthenticationError from service",
-			err:            domain.NewAuthenticationError("invalid credentials"),
+			err:            domain.NewAuthenticationError("invalid credentials", nil),
 			operation:      "login",
 			expectedStatus: http.StatusUnauthorized,
 			expectedMsg:    "invalid credentials",
 		},
 		{
 			name:           "handles TimeoutError from service",
-			err:            domain.NewTimeoutError("request timeout"),
+			err:            domain.NewTimeoutError("request timeout", nil),
 			operation:      "fetch data",
 			expectedStatus: http.StatusRequestTimeout,
 			expectedMsg:    "request timeout",
@@ -628,7 +634,7 @@ func TestHandleServiceError_ErrorTypes(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx := e.NewContext(req, rec)
 
-			responseErr := HandleServiceError(ctx, tt.err, tt.operation)
+			responseErr := HandleServiceError(ctx, tt.err, tt.operation, setupTestLogger())
 			require.NoError(t, responseErr)
 
 			assert.Equal(t, tt.expectedStatus, rec.Code)

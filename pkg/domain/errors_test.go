@@ -145,7 +145,7 @@ func TestIsValidationError(t *testing.T) {
 		},
 		{
 			name:     "NotFoundError",
-			err:      NewNotFoundError("user", 123),
+			err:      NewNotFoundError("user", 123, nil),
 			expected: false,
 		},
 	}
@@ -191,7 +191,7 @@ func TestNewNotFoundError_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := NewNotFoundError(tt.resource, tt.id)
+			err := NewNotFoundError(tt.resource, tt.id, nil)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -222,7 +222,7 @@ func TestNewNotFoundError_Success(t *testing.T) {
 
 // TestNewNotFoundError_ErrorMethod tests NotFoundError Error() method output
 func TestNewNotFoundError_ErrorMethod(t *testing.T) {
-	err := NewNotFoundError("traveller", 456)
+	err := NewNotFoundError("traveller", 456, nil)
 	nfeErr := err.(*NotFoundError)
 
 	if nfeErr.Resource != "traveller" {
@@ -264,7 +264,7 @@ func TestNewConflictError_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := NewConflictError(tt.message)
+			err := NewConflictError(tt.message, nil)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -293,7 +293,7 @@ func TestNewConflictError_Success(t *testing.T) {
 // TestNewConflictError_ErrorMethod tests ConflictError Error() method
 func TestNewConflictError_ErrorMethod(t *testing.T) {
 	message := "duplicate key value violates unique constraint"
-	err := NewConflictError(message)
+	err := NewConflictError(message, nil)
 
 	if err.Error() != message {
 		t.Errorf("expected '%s', got '%s'", message, err.Error())
@@ -321,7 +321,7 @@ func TestNewAuthenticationError_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := NewAuthenticationError(tt.message)
+			err := NewAuthenticationError(tt.message, nil)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -350,7 +350,7 @@ func TestNewAuthenticationError_Success(t *testing.T) {
 // TestNewAuthenticationError_ErrorMethod tests AuthenticationError Error() method
 func TestNewAuthenticationError_ErrorMethod(t *testing.T) {
 	message := "missing or invalid authorization header"
-	err := NewAuthenticationError(message)
+	err := NewAuthenticationError(message, nil)
 
 	if err.Error() != message {
 		t.Errorf("expected '%s', got '%s'", message, err.Error())
@@ -359,9 +359,9 @@ func TestNewAuthenticationError_ErrorMethod(t *testing.T) {
 
 // TestErrorTypes_Differentiation tests that different error types are distinct
 func TestErrorTypes_Differentiation(t *testing.T) {
-	notFoundErr := NewNotFoundError("user", 123)
-	conflictErr := NewConflictError("duplicate entry")
-	authErr := NewAuthenticationError("invalid credentials")
+	notFoundErr := NewNotFoundError("user", 123, nil)
+	conflictErr := NewConflictError("duplicate entry", nil)
+	authErr := NewAuthenticationError("invalid credentials", nil)
 	validationErr := NewValidationError([]FieldError{{Field: "email", Message: "required"}})
 
 	// Test that each error is its correct type

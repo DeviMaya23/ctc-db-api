@@ -95,7 +95,7 @@ func (s *UserServiceSuite) TestUserService_Login() {
 			want:    want{},
 			wantErr: true,
 			beforeTest: func(ctx context.Context, args args, want want) {
-				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, domain.NewNotFoundError("user", args.request.Username)).Once()
+				s.userRepo.On("GetByUsername", mock.Anything, args.request.Username).Return(want.user, domain.NewNotFoundError("user", args.request.Username, nil)).Once()
 			},
 		},
 		{

@@ -39,11 +39,11 @@ func (r *travellerRepository) GetByID(ctx context.Context, id int) (result *doma
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			r.logger.WithContext(ctx).Warn("traveller not found", logFields...)
-			return nil, domain.NewNotFoundError("traveller", id)
+			// r.logger.WithContext(ctx).Warn("traveller not found", logFields...)
+			return nil, domain.NewNotFoundError("traveller", id, nil)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to get traveller", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to get traveller", logFields...)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (r *travellerRepository) GetList(ctx context.Context, filter domain.ListTra
 	// Get total count
 	err = query.Model(&domain.Traveller{}).Count(&total).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Error("failed to count travellers", zap.Error(err))
+		// r.logger.WithContext(ctx).Error("failed to count travellers", zap.Error(err))
 		return
 	}
 
@@ -85,7 +85,7 @@ func (r *travellerRepository) GetList(ctx context.Context, filter domain.ListTra
 
 	if err != nil {
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to get traveller list", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to get traveller list", logFields...)
 		return
 	}
 
@@ -109,11 +109,11 @@ func (r *travellerRepository) Create(ctx context.Context, input *domain.Travelle
 	if err != nil {
 		// Check for duplicate key violation
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
-			return domain.NewConflictError("traveller with this name already exists")
+			// r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists", err)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to create traveller", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to create traveller", logFields...)
 		return
 	}
 
@@ -138,18 +138,18 @@ func (r *travellerRepository) Update(ctx context.Context, input *domain.Travelle
 	if err != nil {
 		// Check for duplicate key violation
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
-			return domain.NewConflictError("traveller with this name already exists")
+			// r.logger.WithContext(ctx).Warn("duplicate traveller name", append(logFields, logging.ErrorFields(err)...)...)
+			return domain.NewConflictError("traveller with this name already exists", err)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to update traveller", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to update traveller", logFields...)
 		return
 	}
 
 	// Check if any rows were affected (resource existed)
 	if result.RowsAffected == 0 {
-		r.logger.WithContext(ctx).Warn("traveller not found for update", logFields...)
-		return domain.NewNotFoundError("traveller", input.ID)
+		// r.logger.WithContext(ctx).Warn("traveller not found for update", logFields...)
+		return domain.NewNotFoundError("traveller", input.ID, nil)
 	}
 
 	return
@@ -171,14 +171,14 @@ func (r *travellerRepository) Delete(ctx context.Context, id int) (err error) {
 
 	if err != nil {
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to delete traveller", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to delete traveller", logFields...)
 		return
 	}
 
 	// Check if any rows were affected (resource existed)
 	if result.RowsAffected == 0 {
-		r.logger.WithContext(ctx).Warn("traveller not found for deletion", logFields...)
-		return domain.NewNotFoundError("traveller", id)
+		// r.logger.WithContext(ctx).Warn("traveller not found for deletion", logFields...)
+		return domain.NewNotFoundError("traveller", id, nil)
 	}
 
 	return
@@ -222,11 +222,11 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 			travOp.End(err)
 			// Check for duplicate key violation
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				r.logger.WithContext(ctx).Warn("duplicate traveller name",
-					zap.String("traveller.name", traveller.Name),
-					zap.Error(err),
-				)
-				return domain.NewConflictError("traveller with this name already exists")
+				// r.logger.WithContext(ctx).Warn("duplicate traveller name",
+				// 	zap.String("traveller.name", traveller.Name),
+				// 	zap.Error(err),
+				// )
+				return domain.NewConflictError("traveller with this name already exists", err)
 			}
 			return err
 		}
@@ -236,13 +236,13 @@ func (r *travellerRepository) CreateTravellerWithAccessory(ctx context.Context, 
 	})
 
 	if err != nil {
-		r.logger.WithContext(ctx).Error("transaction failed",
-			append(
-				logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
-				zap.String("traveller.name", traveller.Name),
-				zap.Error(err),
-			)...,
-		)
+		// r.logger.WithContext(ctx).Error("transaction failed",
+		// 	append(
+		// 		logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
+		// 		zap.String("traveller.name", traveller.Name),
+		// 		zap.Error(err),
+		// 	)...,
+		// )
 		return
 	}
 
@@ -270,10 +270,10 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 		if err := tx.Select("id", "accessory_id").First(&existingTraveller, id).Error; err != nil {
 			fetchOp.End(err)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				r.logger.WithContext(ctx).Warn("traveller not found for update",
-					zap.Int("traveller.id", id),
-				)
-				return domain.NewNotFoundError("traveller", id)
+				// r.logger.WithContext(ctx).Warn("traveller not found for update",
+				// 	zap.Int("traveller.id", id),
+				// )
+				return domain.NewNotFoundError("traveller", id, nil)
 			}
 			return err
 		}
@@ -344,11 +344,11 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 			travUpdateOp.End(err)
 			// Check for duplicate key violation
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				r.logger.WithContext(ctx).Warn("duplicate traveller name",
-					zap.String("traveller.name", traveller.Name),
-					zap.Error(err),
-				)
-				return domain.NewConflictError("traveller with this name already exists")
+				// r.logger.WithContext(ctx).Warn("duplicate traveller name",
+				// 	zap.String("traveller.name", traveller.Name),
+				// 	zap.Error(err),
+				// )
+				return domain.NewConflictError("traveller with this name already exists", err)
 			}
 			return err
 		}
@@ -358,13 +358,13 @@ func (r *travellerRepository) UpdateTravellerWithAccessory(ctx context.Context, 
 	})
 
 	if err != nil {
-		r.logger.WithContext(ctx).Error("transaction failed",
-			append(
-				logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
-				zap.Int("traveller.id", id),
-				zap.Error(err),
-			)...,
-		)
+		// r.logger.WithContext(ctx).Error("transaction failed",
+		// 	append(
+		// 		logging.DatabaseFields("transaction", "m_traveller", op.Duration()),
+		// 		zap.Int("traveller.id", id),
+		// 		zap.Error(err),
+		// 	)...,
+		// )
 		return
 	}
 

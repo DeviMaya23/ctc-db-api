@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -56,26 +55,18 @@ func (s *userService) Login(ctx context.Context, req domain.LoginRequest) (res d
 	// Always run bcrypt comparison regardless of whether user exists
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
 	if err != nil || !userFound {
-		s.logger.WithContext(ctx).Warn("authentication failed",
-			zap.String("user.username", req.Username),
-		)
-		err = domain.NewAuthenticationError("invalid credentials")
+		err = domain.NewAuthenticationError("invalid credentials", nil)
 		return
 	}
 
 	// Generate JWT token
-	token, expiresAt, err := s.tokenService.GenerateToken(ctx, user.Username)
+	token, _, err := s.tokenService.GenerateToken(ctx, user.Username)
 	if err != nil {
 		return res, err
 	}
 
 	res.Username = req.Username
 	res.Token = token
-
-	s.logger.WithContext(ctx).Info("login successful",
-		zap.String("user.username", req.Username),
-		zap.Time("token.expiration", expiresAt),
-	)
 
 	return
 }

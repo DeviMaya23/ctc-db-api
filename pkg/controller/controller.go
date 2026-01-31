@@ -2,15 +2,18 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/logging"
 	pkgValidator "lizobly/ctc-db-api/pkg/validator"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/iancoleman/strcase"
 
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 type DataResponse[T any] struct {
@@ -115,8 +118,8 @@ func ResponseErrorValidation(ctx echo.Context, err error) error {
 	})
 }
 
-// HandleServiceError maps domain errors to appropriate HTTP responses
-func HandleServiceError(ctx echo.Context, err error, operation string) error {
+// HandleServiceError maps domain errors to appropriate HTTP responses and logs at boundary
+func HandleServiceError(ctx echo.Context, err error, operation string, logger *logging.Logger) error {
 	if err == nil {
 		return nil
 	}
@@ -124,29 +127,64 @@ func HandleServiceError(ctx echo.Context, err error, operation string) error {
 	// Struct domain errors - use errors.As()
 	var nfe *domain.NotFoundError
 	if errors.As(err, &nfe) {
-		return NotFound(ctx, err.Error())
+		// NotFound is client error - log as WARN
+		logger.WithContext(ctx.Request().Context()).Warn("not found",
+			zap.String("operation", operation),
+			zap.String("error.type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
+		return NotFound(ctx, nfe.PublicMessage())
 	}
 
 	var ce *domain.ConflictError
 	if errors.As(err, &ce) {
+		// Conflict is client error - log as WARN
+		logger.WithContext(ctx.Request().Context()).Warn("conflict",
+			zap.String("operation", operation),
+			zap.String("error.type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
 		return ResponseError(ctx, http.StatusConflict, ce.Message)
 	}
 
 	var ae *domain.AuthenticationError
 	if errors.As(err, &ae) {
+		// Auth failure is client error - log as WARN
+		logger.WithContext(ctx.Request().Context()).Warn("authentication failed",
+			zap.String("operation", operation),
+			zap.String("error.type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
 		return ResponseError(ctx, http.StatusUnauthorized, ae.Message)
 	}
 
 	var ve *domain.ValidationError
 	if errors.As(err, &ve) {
+		// Validation is client error - log as WARN
+		logger.WithContext(ctx.Request().Context()).Warn("validation error",
+			zap.String("operation", operation),
+			zap.String("error.type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
 		return ResponseErrorValidation(ctx, err)
 	}
 
 	var te *domain.TimeoutError
 	if errors.As(err, &te) {
+		// Timeout could be client or server - log as ERROR
+		logger.WithContext(ctx.Request().Context()).Error("request timeout",
+			zap.String("operation", operation),
+			zap.String("error.type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
 		return RequestTimeout(ctx, te.Message)
 	}
 
-	// Unmapped errors - return 500
+	// Unmapped errors are server errors - log as ERROR
+	logger.WithContext(ctx.Request().Context()).Error("internal server error",
+		zap.String("operation", operation),
+		zap.String("error.type", fmt.Sprintf("%T", err)),
+		zap.Error(err),
+	)
 	return InternalError(ctx, "internal server error")
 }

@@ -252,7 +252,7 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 	}
 
 	// Register handlers
-	traveller.NewTravellerHandler(v1, travellerService)
-	user.NewUserHandler(v1, userService)
-	accessory.NewAccessoryHandler(v1, accessoryService)
+	traveller.NewTravellerHandler(v1, travellerService, logger)
+	user.NewUserHandler(v1, userService, logger)
+	accessory.NewAccessoryHandler(v1, accessoryService, logger)
 }

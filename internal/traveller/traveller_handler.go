@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 	"strconv"
 
@@ -22,11 +23,13 @@ type TravellerService interface {
 
 type TravellerHandler struct {
 	Service TravellerService
+	logger  *logging.Logger
 }
 
-func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler {
+func NewTravellerHandler(e *echo.Group, svc TravellerService, logger *logging.Logger) *TravellerHandler {
 	handler := &TravellerHandler{
 		Service: svc,
+		logger:  logger.Named("handler.traveller"),
 	}
 	group := e.Group("/travellers")
 
@@ -76,7 +79,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get traveller list", h.logger)
 	}
 
 	// Set cache headers for list responses
@@ -109,7 +112,7 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get traveller by id", h.logger)
 	}
 
 	// Set cache headers and check if client has valid cached version
@@ -153,12 +156,12 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	id, err := h.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "create data")
+		return controller.HandleServiceError(ctx, err, "create traveller", h.logger)
 	}
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), int(id))
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get created data")
+		return controller.HandleServiceError(ctx, err, "get created traveller", h.logger)
 	}
 
 	// Set ETag and Last-Modified for created resource
@@ -200,7 +203,7 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 		// Get current state to verify ETag
 		currentTraveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
-			return controller.HandleServiceError(ctx, err, "get data")
+			return controller.HandleServiceError(ctx, err, "get traveller for etag check", h.logger)
 		}
 
 		// Prevent lost updates - resource was modified
@@ -222,12 +225,12 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = h.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "update data")
+		return controller.HandleServiceError(ctx, err, "update traveller", h.logger)
 	}
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get updated data")
+		return controller.HandleServiceError(ctx, err, "get updated traveller", h.logger)
 	}
 
 	// Set new ETag and Last-Modified for updated resource
@@ -260,7 +263,7 @@ func (h *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = h.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "delete data")
+		return controller.HandleServiceError(ctx, err, "delete traveller", h.logger)
 	}
 
 	return controller.NoContent(ctx)

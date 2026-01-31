@@ -4,6 +4,7 @@ import (
 	"context"
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -15,11 +16,13 @@ type UserService interface {
 
 type UserHandler struct {
 	Service UserService
+	logger  *logging.Logger
 }
 
-func NewUserHandler(e *echo.Group, svc UserService) *UserHandler {
+func NewUserHandler(e *echo.Group, svc UserService, logger *logging.Logger) *UserHandler {
 	handler := &UserHandler{
 		Service: svc,
+		logger:  logger.Named("handler.user"),
 	}
 
 	e.POST("/login", handler.Login)
@@ -56,7 +59,7 @@ func (h *UserHandler) Login(ctx echo.Context) error {
 
 	res, err := h.Service.Login(ctx.Request().Context(), request)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "login")
+		return controller.HandleServiceError(ctx, err, "user login", h.logger)
 	}
 
 	return controller.Ok(ctx, res)
