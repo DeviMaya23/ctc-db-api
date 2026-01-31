@@ -28,7 +28,6 @@ func NewDevelopmentLogger() (*Logger, error) {
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	zapLogger, err := config.Build(
-		zap.AddCaller(),
 		zap.AddStacktrace(zapcore.WarnLevel),
 	)
 	if err != nil {
@@ -45,7 +44,6 @@ func NewProductionLogger() (*Logger, error) {
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	zapLogger, err := config.Build(
-		zap.AddCaller(),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
 	if err != nil {

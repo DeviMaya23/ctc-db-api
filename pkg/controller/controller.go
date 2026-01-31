@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"lizobly/ctc-db-api/pkg/domain"
@@ -129,8 +128,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 	if errors.As(err, &nfe) {
 		// NotFound is client error - log as WARN
 		logger.WithContext(ctx.Request().Context()).Warn("not found",
-			zap.String("operation", operation),
-			zap.String("error.type", fmt.Sprintf("%T", err)),
 			zap.Error(err),
 		)
 		return NotFound(ctx, nfe.PublicMessage())
@@ -140,8 +137,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 	if errors.As(err, &ce) {
 		// Conflict is client error - log as WARN
 		logger.WithContext(ctx.Request().Context()).Warn("conflict",
-			zap.String("operation", operation),
-			zap.String("error.type", fmt.Sprintf("%T", err)),
 			zap.Error(err),
 		)
 		return ResponseError(ctx, http.StatusConflict, ce.Message)
@@ -151,8 +146,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 	if errors.As(err, &ae) {
 		// Auth failure is client error - log as WARN
 		logger.WithContext(ctx.Request().Context()).Warn("authentication failed",
-			zap.String("operation", operation),
-			zap.String("error.type", fmt.Sprintf("%T", err)),
 			zap.Error(err),
 		)
 		return ResponseError(ctx, http.StatusUnauthorized, ae.Message)
@@ -162,8 +155,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 	if errors.As(err, &ve) {
 		// Validation is client error - log as WARN
 		logger.WithContext(ctx.Request().Context()).Warn("validation error",
-			zap.String("operation", operation),
-			zap.String("error.type", fmt.Sprintf("%T", err)),
 			zap.Error(err),
 		)
 		return ResponseErrorValidation(ctx, err)
@@ -173,8 +164,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 	if errors.As(err, &te) {
 		// Timeout could be client or server - log as ERROR
 		logger.WithContext(ctx.Request().Context()).Error("request timeout",
-			zap.String("operation", operation),
-			zap.String("error.type", fmt.Sprintf("%T", err)),
 			zap.Error(err),
 		)
 		return RequestTimeout(ctx, te.Message)
@@ -182,8 +171,6 @@ func HandleServiceError(ctx echo.Context, err error, operation string, logger *l
 
 	// Unmapped errors are server errors - log as ERROR
 	logger.WithContext(ctx.Request().Context()).Error("internal server error",
-		zap.String("operation", operation),
-		zap.String("error.type", fmt.Sprintf("%T", err)),
 		zap.Error(err),
 	)
 	return InternalError(ctx, "internal server error")

@@ -191,7 +191,9 @@ func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
 	e.Use(pkgMiddleware.RequestIDMiddleware())
 	e.Use(pkgMiddleware.TimeoutMiddleware(requestTimeout, logger))
-	e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
+	if helpers.EnvWithDefaultBool("REQUEST_BODY_LOGGING_ENABLED", false) {
+		e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
+	}
 
 	// Setup Swagger
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
