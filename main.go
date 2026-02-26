@@ -188,6 +188,7 @@ func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 	}
 
 	// Setup middleware
+	e.Use(pkgMiddleware.RecoveryMiddleware(logger))
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
 	e.Use(pkgMiddleware.RequestIDMiddleware())
 	e.Use(pkgMiddleware.TimeoutMiddleware(requestTimeout, logger))
