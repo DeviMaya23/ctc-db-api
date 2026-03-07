@@ -258,4 +258,9 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 	traveller.NewTravellerHandler(v1, travellerService, logger)
 	user.NewUserHandler(v1, userService, logger)
 	accessory.NewAccessoryHandler(v1, accessoryService, logger)
+
+	// Health check
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
 }
