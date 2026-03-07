@@ -41,11 +41,11 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (re
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			r.logger.WithContext(ctx).Warn("user not found", logFields...)
-			return nil, domain.NewNotFoundError("user", username)
+			// r.logger.WithContext(ctx).Warn("user not found", logFields...)
+			return nil, domain.NewNotFoundError("user", username, nil)
 		}
 		logFields = append(logFields, logging.ErrorFields(err)...)
-		r.logger.WithContext(ctx).Error("failed to get user", logFields...)
+		// r.logger.WithContext(ctx).Error("failed to get user", logFields...)
 		return
 	}
 

@@ -19,8 +19,279 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/accessories": {
+            "get": {
+                "description": "get accessory list with optional filters, ordering, and pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accessories"
+                ],
+                "summary": "Get list of accessories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by traveller name (case insensitive)",
+                        "name": "owner",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by effect (case insensitive)",
+                        "name": "effect",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order by field (hp, sp, patk, pdef, eatk, edef, spd, crit)",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order direction (asc, desc)",
+                        "name": "order_dir",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.PaginatedResponse-domain_AccessoryListItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "authenticate user and receive JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.DataResponse-domain_LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/travellers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get traveller list with optional filters and pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "travellers"
+                ],
+                "summary": "Get list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by name (case insensitive)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by influence name",
+                        "name": "influence",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by job name",
+                        "name": "job",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.PaginatedResponse-domain_TravellerListItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "create a new traveller with optional accessory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "travellers"
+                ],
+                "summary": "Create traveller",
+                "parameters": [
+                    {
+                        "description": "Traveller data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CreateTravellerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TravellerResponse"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Entity tag for caching"
+                            },
+                            "Last-Modified": {
+                                "type": "string",
+                                "description": "Last modified timestamp"
+                            },
+                            "Location": {
+                                "type": "string",
+                                "description": "URI of the created resource"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/travellers/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "get traveller information by ID",
                 "consumes": [
                     "application/json"
@@ -29,13 +300,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "accounts"
+                    "travellers"
                 ],
                 "summary": "Get by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Account ID",
+                        "description": "Traveller ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -45,25 +316,169 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Traveller"
+                            "$ref": "#/definitions/domain.TravellerResponse"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Entity tag for caching"
+                            },
+                            "Last-Modified": {
+                                "type": "string",
+                                "description": "Last modified timestamp"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/rest.StandardAPIResponse"
+                            "$ref": "#/definitions/controller.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/rest.StandardAPIResponse"
+                            "$ref": "#/definitions/controller.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/rest.StandardAPIResponse"
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update an existing traveller by ID with optimistic locking support via If-Match header",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "travellers"
+                ],
+                "summary": "Update traveller",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Traveller ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated traveller data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.UpdateTravellerRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "ETag for optimistic locking",
+                        "name": "If-Match",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TravellerResponse"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Updated entity tag"
+                            },
+                            "Last-Modified": {
+                                "type": "string",
+                                "description": "Updated timestamp"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition Failed - resource was modified",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "soft delete a traveller by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "travellers"
+                ],
+                "summary": "Delete traveller",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Traveller ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ErrorResponse"
                         }
                     }
                 }
@@ -71,47 +486,434 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Influence": {
+        "controller.DataResponse-domain_LoginResponse": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "integer"
+                "data": {
+                    "$ref": "#/definitions/domain.LoginResponse"
+                }
+            }
+        },
+        "controller.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controller.FieldError"
+                    }
                 },
-                "name": {
+                "message": {
                     "type": "string"
                 }
             }
         },
-        "domain.Traveller": {
+        "controller.FieldError": {
             "type": "object",
             "properties": {
-                "id": {
+                "field": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.AccessoryListItemResponse": {
+            "type": "object",
+            "properties": {
+                "crit": {
                     "type": "integer"
+                },
+                "eatk": {
+                    "type": "integer"
+                },
+                "edef": {
+                    "type": "integer"
+                },
+                "effect": {
+                    "type": "string"
+                },
+                "hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "patk": {
+                    "type": "integer"
+                },
+                "pdef": {
+                    "type": "integer"
+                },
+                "sp": {
+                    "type": "integer"
+                },
+                "spd": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.AccessoryResponse": {
+            "type": "object",
+            "properties": {
+                "crit": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "eatk": {
+                    "type": "integer",
+                    "example": 150
+                },
+                "edef": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "effect": {
+                    "type": "string",
+                    "example": "Increases elemental damage by 15%"
+                },
+                "hp": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Crimson Cloak"
+                },
+                "patk": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "pdef": {
+                    "type": "integer",
+                    "example": 80
+                },
+                "sp": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "spd": {
+                    "type": "integer",
+                    "example": 45
+                }
+            }
+        },
+        "domain.CreateAccessoryRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "crit": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "eatk": {
+                    "type": "integer",
+                    "example": 150
+                },
+                "edef": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "effect": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Increases elemental damage by 15%"
+                },
+                "hp": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Crimson Cloak"
+                },
+                "patk": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "pdef": {
+                    "type": "integer",
+                    "example": 80
+                },
+                "sp": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "spd": {
+                    "type": "integer",
+                    "example": 45
+                }
+            }
+        },
+        "domain.CreateTravellerRequest": {
+            "type": "object",
+            "required": [
+                "influence",
+                "job",
+                "name",
+                "rarity"
+            ],
+            "properties": {
+                "accessory": {
+                    "$ref": "#/definitions/domain.CreateAccessoryRequest"
+                },
+                "banner": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Standard Banner"
                 },
                 "influence": {
-                    "$ref": "#/definitions/domain.Influence"
+                    "type": "string",
+                    "example": "Wind"
                 },
-                "influence_id": {
-                    "type": "integer"
+                "job": {
+                    "type": "string",
+                    "example": "Dancer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Viola"
+                },
+                "rarity": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 1,
+                    "example": 5
+                },
+                "release_date": {
+                    "type": "string",
+                    "example": "01-10-2024"
+                }
+            }
+        },
+        "domain.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "domain.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "domain.TravellerListItemResponse": {
+            "type": "object",
+            "properties": {
+                "banner": {
+                    "type": "string"
+                },
+                "influence": {
+                    "type": "string"
+                },
+                "job": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
                 "rarity": {
                     "type": "integer"
+                },
+                "release_date": {
+                    "type": "string"
                 }
             }
         },
-        "rest.StandardAPIResponse": {
+        "domain.TravellerResponse": {
             "type": "object",
             "properties": {
-                "data": {},
-                "errors": {},
-                "message": {
-                    "type": "string"
+                "accessory": {
+                    "$ref": "#/definitions/domain.AccessoryResponse"
                 },
-                "metadata": {}
+                "banner": {
+                    "type": "string",
+                    "example": "Standard Banner"
+                },
+                "influence": {
+                    "type": "string",
+                    "example": "Wind"
+                },
+                "job": {
+                    "type": "string",
+                    "example": "Dancer"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Viola"
+                },
+                "rarity": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "release_date": {
+                    "type": "string",
+                    "example": "01-10-2024"
+                }
             }
+        },
+        "domain.UpdateAccessoryRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "crit": {
+                    "type": "integer"
+                },
+                "eatk": {
+                    "type": "integer"
+                },
+                "edef": {
+                    "type": "integer"
+                },
+                "effect": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "patk": {
+                    "type": "integer"
+                },
+                "pdef": {
+                    "type": "integer"
+                },
+                "sp": {
+                    "type": "integer"
+                },
+                "spd": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.UpdateTravellerRequest": {
+            "type": "object",
+            "required": [
+                "influence",
+                "job",
+                "name",
+                "rarity"
+            ],
+            "properties": {
+                "accessory": {
+                    "$ref": "#/definitions/domain.UpdateAccessoryRequest"
+                },
+                "banner": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Standard Banner"
+                },
+                "influence": {
+                    "type": "string",
+                    "example": "Wind"
+                },
+                "job": {
+                    "type": "string",
+                    "example": "Dancer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Viola"
+                },
+                "rarity": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 1,
+                    "example": 5
+                },
+                "release_date": {
+                    "type": "string",
+                    "example": "01-10-2024"
+                }
+            }
+        },
+        "helpers.PaginatedResponse-domain_AccessoryListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.AccessoryListItemResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "helpers.PaginatedResponse-domain_TravellerListItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.TravellerListItemResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer \" followed by your JWT token (include the word Bearer and a space before the token)",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
@@ -123,7 +925,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "CTC DB API",
-	Description:      "",
+	Description:      "REST API for managing CTC game database including travellers (characters), accessories (equipment), and user authentication.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

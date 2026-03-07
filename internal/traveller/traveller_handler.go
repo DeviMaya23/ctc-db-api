@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 	"strconv"
 
@@ -22,11 +23,13 @@ type TravellerService interface {
 
 type TravellerHandler struct {
 	Service TravellerService
+	logger  *logging.Logger
 }
 
-func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler {
+func NewTravellerHandler(e *echo.Group, svc TravellerService, logger *logging.Logger) *TravellerHandler {
 	handler := &TravellerHandler{
 		Service: svc,
+		logger:  logger.Named("handler.traveller"),
 	}
 	group := e.Group("/travellers")
 
@@ -43,7 +46,7 @@ func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler 
 //
 //	@Summary		Get list
 //	@Description	get traveller list with optional filters and pagination
-//	@Tags			accounts
+//	@Tags			travellers
 //	@Accept			json
 //	@Produce		json
 //	@Param			name		query	string	false	"Filter by name (case insensitive)"
@@ -52,9 +55,10 @@ func NewTravellerHandler(e *echo.Group, svc TravellerService) *TravellerHandler 
 //	@Param			page		query	int		false	"Page number (default 1)"
 //	@Param			page_size	query	int		false	"Page size (default 10, max 100)"
 //	@Success		200	{object}	helpers.PaginatedResponse[domain.TravellerListItemResponse]
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/travellers [get]
+//	@Security		BearerAuth
 func (h *TravellerHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListTravellerRequest
 	err := ctx.Bind(&filter)
@@ -75,7 +79,7 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get traveller list", h.logger)
 	}
 
 	// Set cache headers for list responses
@@ -88,15 +92,18 @@ func (h *TravellerHandler) GetList(ctx echo.Context) error {
 //
 //	@Summary		Get by ID
 //	@Description	get traveller information by ID
-//	@Tags			accounts
+//	@Tags			travellers
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Account ID"
-//	@Success		200	{object}	domain.Traveller
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		404	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Success		200	{object}	domain.TravellerResponse
+//	@Header			200	{string}	ETag	"Entity tag for caching"
+//	@Header			200	{string}	Last-Modified	"Last modified timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/travellers/{id} [get]
+//	@Security		BearerAuth
 func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -105,7 +112,7 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get traveller by id", h.logger)
 	}
 
 	// Set cache headers and check if client has valid cached version
@@ -117,6 +124,23 @@ func (h *TravellerHandler) GetByID(ctx echo.Context) error {
 	return controller.Ok(ctx, response)
 }
 
+// Create godoc
+//
+//	@Summary		Create traveller
+//	@Description	create a new traveller with optional accessory
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		domain.CreateTravellerRequest	true	"Traveller data"
+//	@Success		201	{object}	domain.TravellerResponse
+//	@Header			201	{string}	Location	"URI of the created resource"
+//	@Header			201	{string}	ETag	"Entity tag for caching"
+//	@Header			201	{string}	Last-Modified	"Last modified timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		409	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers [post]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	var newTraveller domain.CreateTravellerRequest
@@ -132,12 +156,12 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 
 	id, err := h.Service.Create(ctx.Request().Context(), newTraveller)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "create data")
+		return controller.HandleServiceError(ctx, err, "create traveller", h.logger)
 	}
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), int(id))
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get created data")
+		return controller.HandleServiceError(ctx, err, "get created traveller", h.logger)
 	}
 
 	// Set ETag and Last-Modified for created resource
@@ -149,6 +173,25 @@ func (h *TravellerHandler) Create(ctx echo.Context) error {
 	return controller.Created(ctx, response, location)
 }
 
+// Update godoc
+//
+//	@Summary		Update traveller
+//	@Description	update an existing traveller by ID with optimistic locking support via If-Match header
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Param			body	body		domain.UpdateTravellerRequest	true	"Updated traveller data"
+//	@Param			If-Match	header	string	false	"ETag for optimistic locking"
+//	@Success		200	{object}	domain.TravellerResponse
+//	@Header			200	{string}	ETag	"Updated entity tag"
+//	@Header			200	{string}	Last-Modified	"Updated timestamp"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		412	{object}	controller.ErrorResponse	"Precondition Failed - resource was modified"
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers/{id} [put]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Update(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -160,7 +203,7 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 		// Get current state to verify ETag
 		currentTraveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 		if err != nil {
-			return controller.HandleServiceError(ctx, err, "get data")
+			return controller.HandleServiceError(ctx, err, "get traveller for etag check", h.logger)
 		}
 
 		// Prevent lost updates - resource was modified
@@ -182,12 +225,12 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 
 	err = h.Service.Update(ctx.Request().Context(), id, updateRequest)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "update data")
+		return controller.HandleServiceError(ctx, err, "update traveller", h.logger)
 	}
 
 	traveller, err := h.Service.GetByID(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get updated data")
+		return controller.HandleServiceError(ctx, err, "get updated traveller", h.logger)
 	}
 
 	// Set new ETag and Last-Modified for updated resource
@@ -198,6 +241,20 @@ func (h *TravellerHandler) Update(ctx echo.Context) error {
 	return controller.Ok(ctx, response)
 }
 
+// Delete godoc
+//
+//	@Summary		Delete traveller
+//	@Description	soft delete a traveller by ID
+//	@Tags			travellers
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Traveller ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		404	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
+//	@Router			/travellers/{id} [delete]
+//	@Security		BearerAuth
 func (h *TravellerHandler) Delete(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -206,7 +263,7 @@ func (h *TravellerHandler) Delete(ctx echo.Context) error {
 
 	err = h.Service.Delete(ctx.Request().Context(), id)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "delete data")
+		return controller.HandleServiceError(ctx, err, "delete traveller", h.logger)
 	}
 
 	return controller.NoContent(ctx)

@@ -7,6 +7,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -36,7 +37,8 @@ func TestTravellerHandlerSuite(t *testing.T) {
 func (s *TravellerHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.travellerService = new(mocks.MockTravellerService)
-	s.handler = NewTravellerHandler(s.e.Group(""), s.travellerService)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	s.handler = NewTravellerHandler(s.e.Group(""), s.travellerService, testLogger)
 }
 
 func (s *TravellerHandlerSuite) TearDownTest() {
@@ -44,9 +46,10 @@ func (s *TravellerHandlerSuite) TearDownTest() {
 }
 
 func (s *TravellerHandlerSuite) TestTravellerHandler_NewHandler() {
-
-	got := NewTravellerHandler(s.e.Group(""), s.travellerService)
-	assert.Equal(s.T(), got, s.handler)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	got := NewTravellerHandler(s.e.Group(""), s.travellerService, testLogger)
+	assert.Equal(s.T(), s.travellerService, got.Service)
+	assert.NotNil(s.T(), got.logger)
 
 }
 
@@ -106,7 +109,7 @@ func (s *TravellerHandlerSuite) TestTravellerHandler_GetByID() {
 			beforeTest: func(ctx echo.Context, param args, want want) {
 				id, err := strconv.Atoi(ctx.Param("id"))
 				assert.Nil(s.T(), err)
-				s.travellerService.On("GetByID", ctx.Request().Context(), id).Return(traveller, domain.NewNotFoundError("traveller", id)).Once()
+				s.travellerService.On("GetByID", ctx.Request().Context(), id).Return(traveller, domain.NewNotFoundError("traveller", id, nil)).Once()
 			},
 		},
 	}

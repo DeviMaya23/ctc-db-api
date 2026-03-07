@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -29,12 +30,18 @@ import (
 
 //	@title			CTC DB API
 //	@version		1.0
+//	@description	REST API for managing CTC game database including travellers (characters), accessories (equipment), and user authentication.
 //	@termsOfService	http://swagger.io/terms/
 
 //	@contact.name	Liz
 //	@contact.email	j2qgehn84@mozmail.com
 
-// @BasePath	/api/v1
+//	@BasePath	/api/v1
+
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Type "Bearer " followed by your JWT token (include the word Bearer and a space before the token)
 func main() {
 	// Load environment variables
 	if err := godotenv.Load("config.env"); err != nil {
@@ -57,14 +64,29 @@ func main() {
 	// Initialize application
 	app := initApplication(db, logger)
 
-	// Start server
+	// Configure server with timeouts
 	addr := fmt.Sprintf(":%s", os.Getenv("APP_PORT"))
+	requestTimeoutStr := helpers.EnvWithDefault("REQUEST_TIMEOUT", "30s")
+	requestTimeout, _ := time.ParseDuration(requestTimeoutStr)
+	writeTimeout := requestTimeout + (5 * time.Second) // Add buffer for response writing
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      app,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: writeTimeout,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// Start server
 	logger.Info("starting server",
 		zap.String("service.name", "ctc-db-api"),
 		zap.String("environment", env),
 		zap.String("address", addr),
+		zap.Duration("request.timeout", requestTimeout),
+		zap.Duration("write.timeout", writeTimeout),
 	)
-	app.Logger.Fatal(app.Start(addr))
+	app.Logger.Fatal(server.ListenAndServe())
 }
 
 func initLogger(env string) *logging.Logger {
@@ -133,6 +155,12 @@ func initDatabase(logger *logging.Logger) (*gorm.DB, *sql.DB) {
 			zap.String("db.host", dbHost))
 	}
 
+	// Configure connection pool
+	dbConn.SetMaxIdleConns(10)
+	dbConn.SetMaxOpenConns(100)
+	dbConn.SetConnMaxLifetime(time.Hour)
+	dbConn.SetConnMaxIdleTime(10 * time.Minute)
+
 	logger.Info("database connected",
 		zap.String("db.system", "postgres"),
 		zap.String("db.host", dbHost),
@@ -150,10 +178,23 @@ func closeDatabase(dbConn *sql.DB, logger *logging.Logger) {
 func initApplication(db *gorm.DB, logger *logging.Logger) *echo.Echo {
 	e := echo.New()
 
+	// Load request timeout configuration
+	requestTimeoutStr := helpers.EnvWithDefault("REQUEST_TIMEOUT", "30s")
+	requestTimeout, err := time.ParseDuration(requestTimeoutStr)
+	if err != nil {
+		logger.Fatal("Invalid REQUEST_TIMEOUT format",
+			zap.String("request.timeout", requestTimeoutStr),
+			zap.Error(err))
+	}
+
 	// Setup middleware
+	e.Use(pkgMiddleware.RecoveryMiddleware(logger))
 	e.Use(pkgMiddleware.TracingMiddleware(logger))
 	e.Use(pkgMiddleware.RequestIDMiddleware())
-	e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
+	e.Use(pkgMiddleware.TimeoutMiddleware(requestTimeout, logger))
+	if helpers.EnvWithDefaultBool("REQUEST_BODY_LOGGING_ENABLED", false) {
+		e.Use(pkgMiddleware.RequestBodyLoggingMiddleware(logger))
+	}
 
 	// Setup Swagger
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -214,7 +255,12 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 	}
 
 	// Register handlers
-	traveller.NewTravellerHandler(v1, travellerService)
-	user.NewUserHandler(v1, userService)
-	accessory.NewAccessoryHandler(v1, accessoryService)
+	traveller.NewTravellerHandler(v1, travellerService, logger)
+	user.NewUserHandler(v1, userService, logger)
+	accessory.NewAccessoryHandler(v1, accessoryService, logger)
+
+	// Health check
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
 }

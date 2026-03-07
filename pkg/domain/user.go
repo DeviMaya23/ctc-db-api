@@ -12,11 +12,11 @@ func (User) TableName() string {
 }
 
 type LoginRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	Username string `json:"username" validate:"required" example:"admin"`
+	Password string `json:"password" validate:"required" example:"password123"`
 }
 
 type LoginResponse struct {
-	Username string `json:"username"`
-	Token    string `json:"token"`
+	Username string `json:"username" example:"admin"`
+	Token    string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 }

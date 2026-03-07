@@ -5,6 +5,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -16,11 +17,13 @@ type AccessoryService interface {
 
 type AccessoryHandler struct {
 	Service AccessoryService
+	logger  *logging.Logger
 }
 
-func NewAccessoryHandler(e *echo.Group, svc AccessoryService) *AccessoryHandler {
+func NewAccessoryHandler(e *echo.Group, svc AccessoryService, logger *logging.Logger) *AccessoryHandler {
 	handler := &AccessoryHandler{
 		Service: svc,
+		logger:  logger.Named("handler.accessory"),
 	}
 	group := e.Group("/accessories")
 
@@ -43,8 +46,8 @@ func NewAccessoryHandler(e *echo.Group, svc AccessoryService) *AccessoryHandler 
 //	@Param			page			query	int		false	"Page number (default 1)"
 //	@Param			page_size		query	int		false	"Page size (default 10, max 100)"
 //	@Success		200	{object}	helpers.PaginatedResponse[domain.AccessoryListItemResponse]
-//	@Failure		400	{object}	StandardAPIResponse
-//	@Failure		500	{object}	StandardAPIResponse
+//	@Failure		400	{object}	controller.ErrorResponse
+//	@Failure		500	{object}	controller.ErrorResponse
 //	@Router			/accessories [get]
 func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 	var filter domain.ListAccessoryRequest
@@ -66,7 +69,7 @@ func (h *AccessoryHandler) GetList(ctx echo.Context) error {
 
 	result, err := h.Service.GetList(ctx.Request().Context(), filter, params)
 	if err != nil {
-		return controller.HandleServiceError(ctx, err, "get data")
+		return controller.HandleServiceError(ctx, err, "get accessory list", h.logger)
 	}
 
 	// Set cache headers for list responses

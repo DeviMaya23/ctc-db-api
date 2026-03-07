@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,7 +34,8 @@ func TestAccessoryHandlerSuite(t *testing.T) {
 func (s *AccessoryHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.accessoryService = new(mocks.MockAccessoryService)
-	s.handler = NewAccessoryHandler(s.e.Group(""), s.accessoryService)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	s.handler = NewAccessoryHandler(s.e.Group(""), s.accessoryService, testLogger)
 }
 
 func (s *AccessoryHandlerSuite) TearDownTest() {
@@ -41,8 +43,10 @@ func (s *AccessoryHandlerSuite) TearDownTest() {
 }
 
 func (s *AccessoryHandlerSuite) TestAccessoryHandler_NewHandler() {
-	got := NewAccessoryHandler(s.e.Group(""), s.accessoryService)
-	assert.Equal(s.T(), got, s.handler)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	got := NewAccessoryHandler(s.e.Group(""), s.accessoryService, testLogger)
+	assert.Equal(s.T(), s.accessoryService, got.Service)
+	assert.NotNil(s.T(), got.logger)
 }
 
 func (s *AccessoryHandlerSuite) TestAccessoryHandler_GetList() {

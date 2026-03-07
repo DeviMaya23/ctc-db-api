@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 )
 
 // TokenService handles JWT token generation and validation
@@ -41,17 +40,8 @@ func (s *TokenService) GenerateToken(ctx context.Context, username string) (toke
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token, err = jwtToken.SignedString(s.secretKey)
 	if err != nil {
-		s.logger.WithContext(ctx).Error("failed to sign JWT token",
-			zap.String("user.username", username),
-			zap.Error(err),
-		)
 		return "", time.Time{}, fmt.Errorf("generate token: %w", err)
 	}
-
-	s.logger.WithContext(ctx).Debug("JWT token generated",
-		zap.String("user.username", username),
-		zap.Time("token.expiration", expiresAt),
-	)
 
 	return token, expiresAt, nil
 }

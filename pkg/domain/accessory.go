@@ -19,16 +19,16 @@ func (Accessory) TableName() string {
 }
 
 type CreateAccessoryRequest struct {
-	Name   string `json:"name" validate:"required,lte=50"`
-	HP     int    `json:"hp"`
-	SP     int    `json:"sp"`
-	PAtk   int    `json:"patk"`
-	PDef   int    `json:"pdef"`
-	EAtk   int    `json:"eatk"`
-	EDef   int    `json:"edef"`
-	Spd    int    `json:"spd"`
-	Crit   int    `json:"crit"`
-	Effect string `json:"effect" validate:"omitempty,lte=200"`
+	Name   string `json:"name" validate:"required,lte=50" example:"Crimson Cloak"`
+	HP     int    `json:"hp" example:"500"`
+	SP     int    `json:"sp" example:"50"`
+	PAtk   int    `json:"patk" example:"120"`
+	PDef   int    `json:"pdef" example:"80"`
+	EAtk   int    `json:"eatk" example:"150"`
+	EDef   int    `json:"edef" example:"100"`
+	Spd    int    `json:"spd" example:"45"`
+	Crit   int    `json:"crit" example:"25"`
+	Effect string `json:"effect" validate:"omitempty,lte=200" example:"Increases elemental damage by 15%"`
 }
 
 type UpdateAccessoryRequest struct {
@@ -47,16 +47,16 @@ type UpdateAccessoryRequest struct {
 // Response DTOs
 
 type AccessoryResponse struct {
-	Name   string `json:"name"`
-	HP     int    `json:"hp"`
-	SP     int    `json:"sp"`
-	PAtk   int    `json:"patk"`
-	PDef   int    `json:"pdef"`
-	EAtk   int    `json:"eatk"`
-	EDef   int    `json:"edef"`
-	Spd    int    `json:"spd"`
-	Crit   int    `json:"crit"`
-	Effect string `json:"effect"`
+	Name   string `json:"name" example:"Crimson Cloak"`
+	HP     int    `json:"hp" example:"500"`
+	SP     int    `json:"sp" example:"50"`
+	PAtk   int    `json:"patk" example:"120"`
+	PDef   int    `json:"pdef" example:"80"`
+	EAtk   int    `json:"eatk" example:"150"`
+	EDef   int    `json:"edef" example:"100"`
+	Spd    int    `json:"spd" example:"45"`
+	Crit   int    `json:"crit" example:"25"`
+	Effect string `json:"effect" example:"Increases elemental damage by 15%"`
 }
 
 // Request DTOs

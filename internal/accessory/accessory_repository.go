@@ -7,7 +7,6 @@ import (
 	"lizobly/ctc-db-api/pkg/telemetry"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -32,13 +31,13 @@ func (r *accessoryRepository) Create(ctx context.Context, input *domain.Accessor
 	err = r.db.WithContext(ctx).Create(input).Error
 
 	if err != nil {
-		r.logger.WithContext(ctx).Error("failed to create accessory",
-			append(
-				logging.DatabaseFields("insert", "m_accessory", op.Duration()),
-				zap.String("accessory.name", input.Name),
-				zap.Error(err),
-			)...,
-		)
+		// r.logger.WithContext(ctx).Error("failed to create accessory",
+		// 	append(
+		// 		logging.DatabaseFields("insert", "m_accessory", op.Duration()),
+		// 		zap.String("accessory.name", input.Name),
+		// 		zap.Error(err),
+		// 	)...,
+		// )
 		return
 	}
 
@@ -67,13 +66,13 @@ func (r *accessoryRepository) Update(ctx context.Context, input *domain.Accessor
 	err = r.db.WithContext(ctx).Model(&domain.Accessory{}).Where("id = ?", input.ID).Updates(updateData).Error
 
 	if err != nil {
-		r.logger.WithContext(ctx).Error("failed to update accessory",
-			append(
-				logging.DatabaseFields("update", "m_accessory", op.Duration()),
-				zap.Int64("accessory.id", input.ID),
-				zap.Error(err),
-			)...,
-		)
+		// r.logger.WithContext(ctx).Error("failed to update accessory",
+		// 	append(
+		// 		logging.DatabaseFields("update", "m_accessory", op.Duration()),
+		// 		zap.Int64("accessory.id", input.ID),
+		// 		zap.Error(err),
+		// 	)...,
+		// )
 		return
 	}
 
@@ -99,7 +98,7 @@ func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAcc
 
 	err = query.Count(&total).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Error("failed to count accessories", zap.Error(err))
+		// r.logger.WithContext(ctx).Error("failed to count accessories", zap.Error(err))
 		return
 	}
 
@@ -120,7 +119,7 @@ func (r *accessoryRepository) GetList(ctx context.Context, filter domain.ListAcc
 	}
 	err = query.Offset(offset).Limit(limit).Find(&rows).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Error("failed to get accessory list", zap.Error(err))
+		// r.logger.WithContext(ctx).Error("failed to get accessory list", zap.Error(err))
 		return
 	}
 

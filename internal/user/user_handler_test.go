@@ -6,6 +6,7 @@ import (
 	"lizobly/ctc-db-api/pkg/controller"
 	"lizobly/ctc-db-api/pkg/domain"
 	"lizobly/ctc-db-api/pkg/helpers"
+	"lizobly/ctc-db-api/pkg/logging"
 	"net/http"
 	"strings"
 	"testing"
@@ -32,7 +33,8 @@ func TestUserHandlerSuite(t *testing.T) {
 func (s *UserHandlerSuite) SetupTest() {
 	s.e = echo.New()
 	s.userService = new(mocks.MockUserService)
-	s.handler = NewUserHandler(s.e.Group(""), s.userService)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	s.handler = NewUserHandler(s.e.Group(""), s.userService, testLogger)
 }
 
 func (s *UserHandlerSuite) TearDownTest() {
@@ -40,9 +42,10 @@ func (s *UserHandlerSuite) TearDownTest() {
 }
 
 func (s *UserHandlerSuite) TestUserHandler_NewHandler() {
-
-	got := NewUserHandler(s.e.Group(""), s.userService)
-	assert.Equal(s.T(), got, s.handler)
+	testLogger, _ := logging.NewDevelopmentLogger()
+	got := NewUserHandler(s.e.Group(""), s.userService, testLogger)
+	assert.Equal(s.T(), s.userService, got.Service)
+	assert.NotNil(s.T(), got.logger)
 
 }
 
@@ -112,7 +115,7 @@ func (s *UserHandlerSuite) TestUserHandler_Login() {
 				statusCode: http.StatusUnauthorized,
 			},
 			beforeTest: func(ctx echo.Context, param args, want want) {
-				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.NewAuthenticationError("invalid credentials")).Once()
+				s.userService.On("Login", mock.Anything, param.requestBody).Return(want.loginResponse, domain.NewAuthenticationError("invalid credentials", nil)).Once()
 
 			},
 		},

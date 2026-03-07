@@ -1,48 +1,523 @@
 basePath: /api/v1
 definitions:
-  domain.Influence:
+  controller.DataResponse-domain_LoginResponse:
     properties:
-      id:
+      data:
+        $ref: '#/definitions/domain.LoginResponse'
+    type: object
+  controller.ErrorResponse:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/controller.FieldError'
+        type: array
+      message:
+        type: string
+    type: object
+  controller.FieldError:
+    properties:
+      field:
+        type: string
+      message:
+        type: string
+    type: object
+  domain.AccessoryListItemResponse:
+    properties:
+      crit:
+        type: integer
+      eatk:
+        type: integer
+      edef:
+        type: integer
+      effect:
+        type: string
+      hp:
         type: integer
       name:
         type: string
+      owner:
+        type: string
+      patk:
+        type: integer
+      pdef:
+        type: integer
+      sp:
+        type: integer
+      spd:
+        type: integer
     type: object
-  domain.Traveller:
+  domain.AccessoryResponse:
     properties:
-      id:
+      crit:
+        example: 25
         type: integer
+      eatk:
+        example: 150
+        type: integer
+      edef:
+        example: 100
+        type: integer
+      effect:
+        example: Increases elemental damage by 15%
+        type: string
+      hp:
+        example: 500
+        type: integer
+      name:
+        example: Crimson Cloak
+        type: string
+      patk:
+        example: 120
+        type: integer
+      pdef:
+        example: 80
+        type: integer
+      sp:
+        example: 50
+        type: integer
+      spd:
+        example: 45
+        type: integer
+    type: object
+  domain.CreateAccessoryRequest:
+    properties:
+      crit:
+        example: 25
+        type: integer
+      eatk:
+        example: 150
+        type: integer
+      edef:
+        example: 100
+        type: integer
+      effect:
+        example: Increases elemental damage by 15%
+        maxLength: 200
+        type: string
+      hp:
+        example: 500
+        type: integer
+      name:
+        example: Crimson Cloak
+        maxLength: 50
+        type: string
+      patk:
+        example: 120
+        type: integer
+      pdef:
+        example: 80
+        type: integer
+      sp:
+        example: 50
+        type: integer
+      spd:
+        example: 45
+        type: integer
+    required:
+    - name
+    type: object
+  domain.CreateTravellerRequest:
+    properties:
+      accessory:
+        $ref: '#/definitions/domain.CreateAccessoryRequest'
+      banner:
+        example: Standard Banner
+        maxLength: 50
+        type: string
       influence:
-        $ref: '#/definitions/domain.Influence'
-      influence_id:
+        example: Wind
+        type: string
+      job:
+        example: Dancer
+        type: string
+      name:
+        example: Viola
+        maxLength: 50
+        type: string
+      rarity:
+        example: 5
+        maximum: 5
+        minimum: 1
         type: integer
+      release_date:
+        example: 01-10-2024
+        type: string
+    required:
+    - influence
+    - job
+    - name
+    - rarity
+    type: object
+  domain.LoginRequest:
+    properties:
+      password:
+        example: password123
+        type: string
+      username:
+        example: admin
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  domain.LoginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+  domain.TravellerListItemResponse:
+    properties:
+      banner:
+        type: string
+      influence:
+        type: string
+      job:
+        type: string
       name:
         type: string
       rarity:
         type: integer
-    type: object
-  rest.StandardAPIResponse:
-    properties:
-      data: {}
-      errors: {}
-      message:
+      release_date:
         type: string
-      metadata: {}
+    type: object
+  domain.TravellerResponse:
+    properties:
+      accessory:
+        $ref: '#/definitions/domain.AccessoryResponse'
+      banner:
+        example: Standard Banner
+        type: string
+      influence:
+        example: Wind
+        type: string
+      job:
+        example: Dancer
+        type: string
+      name:
+        example: Viola
+        type: string
+      rarity:
+        example: 5
+        type: integer
+      release_date:
+        example: 01-10-2024
+        type: string
+    type: object
+  domain.UpdateAccessoryRequest:
+    properties:
+      crit:
+        type: integer
+      eatk:
+        type: integer
+      edef:
+        type: integer
+      effect:
+        maxLength: 200
+        type: string
+      hp:
+        type: integer
+      name:
+        maxLength: 50
+        type: string
+      patk:
+        type: integer
+      pdef:
+        type: integer
+      sp:
+        type: integer
+      spd:
+        type: integer
+    required:
+    - name
+    type: object
+  domain.UpdateTravellerRequest:
+    properties:
+      accessory:
+        $ref: '#/definitions/domain.UpdateAccessoryRequest'
+      banner:
+        example: Standard Banner
+        maxLength: 50
+        type: string
+      influence:
+        example: Wind
+        type: string
+      job:
+        example: Dancer
+        type: string
+      name:
+        example: Viola
+        maxLength: 50
+        type: string
+      rarity:
+        example: 5
+        maximum: 5
+        minimum: 1
+        type: integer
+      release_date:
+        example: 01-10-2024
+        type: string
+    required:
+    - influence
+    - job
+    - name
+    - rarity
+    type: object
+  helpers.PaginatedResponse-domain_AccessoryListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.AccessoryListItemResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  helpers.PaginatedResponse-domain_TravellerListItemResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.TravellerListItemResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
     type: object
 info:
   contact:
     email: j2qgehn84@mozmail.com
     name: Liz
+  description: REST API for managing CTC game database including travellers (characters),
+    accessories (equipment), and user authentication.
   termsOfService: http://swagger.io/terms/
   title: CTC DB API
   version: "1.0"
 paths:
+  /accessories:
+    get:
+      consumes:
+      - application/json
+      description: get accessory list with optional filters, ordering, and pagination
+      parameters:
+      - description: Filter by traveller name (case insensitive)
+        in: query
+        name: owner
+        type: string
+      - description: Filter by effect (case insensitive)
+        in: query
+        name: effect
+        type: string
+      - description: Order by field (hp, sp, patk, pdef, eatk, edef, spd, crit)
+        in: query
+        name: order_by
+        type: string
+      - description: Order direction (asc, desc)
+        in: query
+        name: order_dir
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/helpers.PaginatedResponse-domain_AccessoryListItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      summary: Get list of accessories
+      tags:
+      - accessories
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: authenticate user and receive JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.DataResponse-domain_LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      summary: User login
+      tags:
+      - authentication
+  /travellers:
+    get:
+      consumes:
+      - application/json
+      description: get traveller list with optional filters and pagination
+      parameters:
+      - description: Filter by name (case insensitive)
+        in: query
+        name: name
+        type: string
+      - description: Filter by influence name
+        in: query
+        name: influence
+        type: string
+      - description: Filter by job name
+        in: query
+        name: job
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/helpers.PaginatedResponse-domain_TravellerListItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get list
+      tags:
+      - travellers
+    post:
+      consumes:
+      - application/json
+      description: create a new traveller with optional accessory
+      parameters:
+      - description: Traveller data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateTravellerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            ETag:
+              description: Entity tag for caching
+              type: string
+            Last-Modified:
+              description: Last modified timestamp
+              type: string
+            Location:
+              description: URI of the created resource
+              type: string
+          schema:
+            $ref: '#/definitions/domain.TravellerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create traveller
+      tags:
+      - travellers
   /travellers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: soft delete a traveller by ID
+      parameters:
+      - description: Traveller ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete traveller
+      tags:
+      - travellers
     get:
       consumes:
       - application/json
       description: get traveller information by ID
       parameters:
-      - description: Account ID
+      - description: Traveller ID
         in: path
         name: id
         required: true
@@ -52,21 +527,93 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              description: Entity tag for caching
+              type: string
+            Last-Modified:
+              description: Last modified timestamp
+              type: string
           schema:
-            $ref: '#/definitions/domain.Traveller'
+            $ref: '#/definitions/domain.TravellerResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/rest.StandardAPIResponse'
+            $ref: '#/definitions/controller.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/rest.StandardAPIResponse'
+            $ref: '#/definitions/controller.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/rest.StandardAPIResponse'
+            $ref: '#/definitions/controller.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Get by ID
       tags:
-      - accounts
+      - travellers
+    put:
+      consumes:
+      - application/json
+      description: update an existing traveller by ID with optimistic locking support
+        via If-Match header
+      parameters:
+      - description: Traveller ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated traveller data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateTravellerRequest'
+      - description: ETag for optimistic locking
+        in: header
+        name: If-Match
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Updated entity tag
+              type: string
+            Last-Modified:
+              description: Updated timestamp
+              type: string
+          schema:
+            $ref: '#/definitions/domain.TravellerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "412":
+          description: Precondition Failed - resource was modified
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update traveller
+      tags:
+      - travellers
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer " followed by your JWT token (include the word Bearer
+      and a space before the token)
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
