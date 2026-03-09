@@ -1,0 +1,84 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout Migrations
+        uses: actions/checkout@v4
+        with:
+          repository: DeviMaya23/ctc-db
+          path: database-migrations
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+      
+      - name: Run tests
+        env:
+          MIGRATION_PATH: ${{ github.workspace }}/database-migrations
+        run: go test -v ./...
+        
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+      
+      - name: Build binary for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o ctc-api main.go
+          chmod +x ctc-api
+      
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+          
+          # Transfer binary
+          scp -i ~/.ssh/id_rsa ctc-api $EC2_USER@$EC2_HOST:/home/ec2-user/ctc-api-new
+          
+          # Deploy
+          ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST << 'ENDSSH'
+            sudo systemctl stop ctc-api
+            sudo cp /usr/local/bin/ctc-api /usr/local/bin/ctc-api.backup || true
+            sudo mv /home/ec2-user/ctc-api-new /usr/local/bin/ctc-api
+            sudo chmod +x /usr/local/bin/ctc-api
+            sudo systemctl start ctc-api
+            sleep 3
+          ENDSSH
+      
+      - name: Verify deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          # Health check via HTTPS (through Caddy)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://$EC2_HOST/health)
+          
+          if [ $response -eq 200 ]; then
+            echo "✅ Deployment successful - health check passed"
+          else
+            echo "❌ Deployment failed - health check returned $response"
+            exit 1
+          fi
