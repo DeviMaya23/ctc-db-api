@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout Migrations
+        uses: actions/checkout@v4
+        with:
+          repository: DeviMaya23/ctc-db
+          path: database-migrations
       
       - name: Set up Go
         uses: actions/setup-go@v4
