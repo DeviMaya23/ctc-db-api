@@ -47,8 +47,14 @@
    ```
 
 4. **Access the API**
+
+   **Option A: Locally**
    - **Swagger UI**: http://localhost:9080/swagger/index.html
    - **API Base**: http://localhost:9080/api/v1
+
+   **Option B: With Docker**
+   - **Swagger UI**: http://localhost:8080/swagger/index.html
+   - **API Base**: http://localhost:8080/api/v1
 
 ## Project Structure
 
