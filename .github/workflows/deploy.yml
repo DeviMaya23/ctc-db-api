@@ -1,9 +1,17 @@
-name: Deploy to EC2
+name: Deploy to ECS
 
 on:
   push:
-    branches: [ master ]
+    branches: [ ci-test-ecs ]
   workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: ctc-api
+  ECS_SERVICE: ctc-api-service
+  ECS_CLUSTER: ctc-cluster
+  ECS_TASK_DEFINITION: ctc-api-task
+  CONTAINER_NAME: ctc-api
 
 jobs:
   test:
@@ -39,42 +47,68 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.24'
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       
-      - name: Build binary for Linux
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o ctc-api main.go
-          chmod +x ctc-api
-      
-      - name: Deploy to EC2
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+          # Build Docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           
-          # Transfer binary
-          scp -i ~/.ssh/id_rsa ctc-api $EC2_USER@$EC2_HOST:/home/ec2-user/ctc-api-new
+          # Push both tags to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
-          # Deploy
-          ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST << 'ENDSSH'
-            sudo systemctl stop ctc-api
-            sudo cp /usr/local/bin/ctc-api /usr/local/bin/ctc-api.backup || true
-            sudo mv /home/ec2-user/ctc-api-new /usr/local/bin/ctc-api
-            sudo chmod +x /usr/local/bin/ctc-api
-            sudo systemctl start ctc-api
-            sleep 3
-          ENDSSH
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --query taskDefinition > task-definition.json
+      
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+      
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
       
       - name: Verify deployment
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
-          # Health check via HTTPS (through Caddy)
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://$EC2_HOST/health)
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          
+          # Get ALB DNS name from ECS service
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --query "LoadBalancers[?contains(LoadBalancerName, 'ctc-api')].DNSName" \
+            --output text)
+          
+          # Health check via ALB
+          response=$(curl -k -s -o /dev/null -w "%{http_code}" https://$ALB_DNS/health)
           
           if [ $response -eq 200 ]; then
             echo "✅ Deployment successful - health check passed"

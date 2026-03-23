@@ -261,6 +261,6 @@ func setupRoutes(e *echo.Echo, db *gorm.DB, logger *logging.Logger) {
 
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+		return c.JSON(http.StatusOK, map[string]string{"status": "okok"})
 	})
 }
