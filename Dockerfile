@@ -10,14 +10,23 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o ctc-api main.go
 
 FROM alpine:3.22
+
 RUN apk add --no-cache ca-certificates tzdata wget
+
+RUN wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared && \
+    chmod +x /usr/local/bin/cloudflared
+
 RUN addgroup -g 1000 appuser && \
     adduser -D -u 1000 -G appuser appuser
 
 WORKDIR /app
 COPY --from=builder /app/ctc-api .
 
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+
 RUN chown -R appuser:appuser /app
+
+RUN chmod +x /app/docker-entrypoint.sh
 
 USER appuser
 
@@ -26,4 +35,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-CMD [ "/app/ctc-api" ]
+CMD ["/app/docker-entrypoint.sh"]
